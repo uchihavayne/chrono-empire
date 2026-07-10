@@ -44,6 +44,13 @@ export function iapConfigured(): boolean {
   return IAP_CONFIG.revenueCatApiKeyIos.length > 0 || IAP_CONFIG.revenueCatApiKeyAndroid.length > 0;
 }
 
+/** Whether to show the shop UI at all. On a native store build we hide it until real IAP is
+ *  configured, so Apple/Google never see non-functional purchase buttons (an instant rejection).
+ *  On the web build it stays visible for testing via the simulated purchase flow. */
+export function shopVisible(): boolean {
+  return !Capacitor.isNativePlatform() || iapConfigured();
+}
+
 let initialized = false;
 
 /** UI registers a simulated purchase flow for web / unconfigured testing. */
@@ -95,12 +102,13 @@ export async function getPrices(): Promise<Record<string, string>> {
 export async function purchase(id: string): Promise<PurchaseResult> {
   const real = await initRC();
   if (!real) {
-    // web build, or native without RC keys → simulate through the UI
-    if (simulatePurchase) {
+    // web build → simulate through the UI. On a native build without RC keys we must NOT
+    // grant anything (the shop is hidden there anyway) — never hand out free purchases.
+    if (!Capacitor.isNativePlatform() && simulatePurchase) {
       const ok = await simulatePurchase(id);
       return { ok, simulated: true };
     }
-    return { ok: true, simulated: true };
+    return { ok: false, error: 'not-configured' };
   }
   try {
     const { Purchases } = await import('@revenuecat/purchases-capacitor');

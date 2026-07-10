@@ -4,7 +4,7 @@ import { formatNumber } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
 import { ConfirmModal } from './Modals';
-import { PRODUCTS } from '../services/iap';
+import { PRODUCTS, shopVisible } from '../services/iap';
 import { purchase as iapPurchase, restore as iapRestore } from '../services/iap';
 import type { LbEntry } from '../services/leaderboard';
 
@@ -151,7 +151,8 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         )}
       </div>
 
-      {/* shop (IAP) */}
+      {/* shop (IAP) — hidden on a native build until real IAP is configured */}
+      {shopVisible() && <>
       <div className="section-title">🛒 {t('shop_title')}</div>
       <p className="hint">{t('shop_hint')}</p>
       {PRODUCTS.map((p) => {
@@ -173,6 +174,7 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
       <button className="action-btn purple" style={{ width: '100%', padding: 10, marginTop: 8 }} onClick={restorePurchases}>
         {t('shop_restore')}
       </button>
+      </>}
 
       {/* cloud backup */}
       <div className="section-title">☁️ {t('cloud_title')}</div>
