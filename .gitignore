@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# native platforms (regenerated in CI by `cap add` + `cap sync`)
+ios/
+android/
+
+# generated resources fan-out (source icon.png/splash.png ARE committed)
+resources/ios/
+resources/android/
+
+# logs & os
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# local env
+.env
+.env.local

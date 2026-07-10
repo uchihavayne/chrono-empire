@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chrono Empire — App Store Screenshots</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --font:'Baloo 2','SF Pro Rounded',system-ui,'Segoe UI',sans-serif; --sw:1290px; --sh:2796px; --sc:.279; }
+  html,body { background:#0a0c14; font-family:var(--font); }
+  body { display:flex; flex-wrap:wrap; gap:22px; padding:22px; justify-content:center; }
+  .frame { width:calc(var(--sw) * var(--sc)); height:calc(var(--sh) * var(--sc)); overflow:hidden; border-radius:26px; box-shadow:0 18px 60px rgba(0,0,0,.6); }
+  .shot { width:var(--sw); height:var(--sh); transform:scale(var(--sc)); transform-origin:top left; position:relative; overflow:hidden; }
+  body.full { flex-direction:column; align-items:center; gap:0; padding:0; }
+  body.full .frame { width:var(--sw); height:var(--sh); border-radius:0; }
+  body.full .shot { transform:none; }
+
+  .shot { color:#fff; text-align:center; }
+  .cap { padding:150px 100px 0; }
+  .head { font-weight:800; font-size:128px; line-height:1.0; letter-spacing:-1.5px; text-shadow:0 6px 30px rgba(0,0,0,.4); }
+  .head .g { background:linear-gradient(180deg,#fff3c4,#ffc63c 55%,#ff9d1c); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .sub { font-weight:600; font-size:52px; opacity:.9; margin-top:36px; line-height:1.32; }
+  .stars { position:absolute; inset:0; z-index:0; opacity:.75; pointer-events:none;
+    background-image:
+      radial-gradient(3px 3px at 14% 10%, #fff 50%, transparent 51%),
+      radial-gradient(2px 2px at 42% 7%, #ffffffcc 50%, transparent 51%),
+      radial-gradient(3px 3px at 70% 13%, #fff 50%, transparent 51%),
+      radial-gradient(2px 2px at 86% 8%, #ffffffb0 50%, transparent 51%),
+      radial-gradient(2px 2px at 24% 18%, #ffffffb0 50%, transparent 51%),
+      radial-gradient(3px 3px at 60% 22%, #ffffffd0 50%, transparent 51%); }
+
+  /* device: bleeds off the bottom edge (modern App Store style) */
+  .dev { position:absolute; left:50%; bottom:-70px; transform:translateX(-50%); width:940px; height:1720px;
+         border:20px solid #0d0e15; border-radius:96px 96px 0 0; overflow:hidden;
+         box-shadow:0 -10px 90px rgba(0,0,0,.5), inset 0 3px 0 rgba(255,255,255,.06); }
+  .gs { position:absolute; inset:0; padding:70px 0 0; }
+  .gs .st { position:absolute; inset:0; z-index:0; opacity:.7;
+    background-image:radial-gradient(2px 2px at 20% 12%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 64% 8%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 82% 18%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 38% 22%,#fff 50%,transparent 51%); }
+  .gs > * { position:relative; z-index:1; }
+  .cash-row { display:flex; align-items:center; justify-content:center; gap:20px; }
+  .cash-row .c { width:76px; height:76px; }
+  .cash { font-weight:800; font-size:96px; background:linear-gradient(180deg,#fff3c4,#ffc63c 50%,#ff9d1c);
+          -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .inc { font-weight:600; font-size:40px; color:#a6aecb; margin-top:-6px; }
+  .inc b { color:#45e08a; }
+  .hchips { display:flex; gap:16px; justify-content:center; margin-top:22px; }
+  .hchip { font-weight:700; font-size:34px; padding:12px 26px; border-radius:40px; display:inline-flex; align-items:center; gap:10px;
+           background:rgba(10,13,28,.55); border:2px solid rgba(255,255,255,.14); }
+  .hchip svg { width:30px; height:30px; }
+
+  .gc { display:flex; align-items:center; gap:26px; margin:40px 44px 0; padding:26px 26px 26px 34px;
+        border-radius:38px; position:relative; overflow:hidden; }
+  .gc::before { content:''; position:absolute; left:0; top:0; bottom:0; width:14px; border-radius:0; }
+  .gc .ico { width:128px; height:128px; flex:0 0 128px; }
+  .gc .mid { flex:1; text-align:left; }
+  .gc .t { font-weight:800; font-size:48px; }
+  .gc .r { font-weight:800; font-size:40px; color:#7effb6; margin-top:2px; }
+  .gc .m { font-weight:600; font-size:30px; color:#9aa3c0; }
+  .gc .buy { font-weight:800; font-size:40px; padding:26px 34px; border-radius:26px; color:#241300; line-height:1.05; text-align:center; }
+  .gc .buy small { display:block; font-size:30px; opacity:.8; }
+
+  /* prestige panel */
+  .prestige { text-align:center; padding:40px 44px 0; }
+  .prestige .vx { width:300px; height:300px; margin:20px auto; filter:drop-shadow(0 0 50px rgba(141,107,255,.9)); }
+  .prestige .big { font-weight:800; font-size:80px; }
+  .prestige .crys { display:flex; align-items:center; justify-content:center; gap:18px; font-weight:800; font-size:60px; color:#c4b0ff; margin-top:14px; }
+  .prestige .crys svg { width:56px; height:56px; }
+  .inv { display:flex; align-items:center; gap:24px; margin:26px 44px 0; padding:24px 30px; border-radius:32px;
+         background:linear-gradient(160deg,rgba(141,107,255,.2),rgba(141,107,255,.05)); border:2px solid rgba(141,107,255,.4); text-align:left; }
+  .inv .av { width:96px; height:96px; flex:0 0 96px; border-radius:26px; display:flex; align-items:center; justify-content:center; font-size:56px;
+             background:radial-gradient(circle at 50% 30%,rgba(141,107,255,.35),rgba(141,107,255,.08)); border:2px solid rgba(141,107,255,.4); }
+  .inv .t { font-weight:800; font-size:46px; }
+  .inv .d { font-weight:600; font-size:34px; color:#c4b0ff; }
+  .inv .buy { margin-left:auto; font-weight:800; font-size:40px; padding:20px 30px; border-radius:24px; color:#fff;
+              background:linear-gradient(180deg,#bda6ff,#5a36d6); }
+
+  /* era timeline */
+  .tl { padding:24px 44px 0; display:flex; flex-direction:column; gap:24px; }
+  .trow { display:flex; align-items:center; gap:30px; padding:24px 30px; border-radius:34px;
+          background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.12); }
+  .trow .ico { width:104px; height:104px; flex:0 0 104px; }
+  .trow .lbl { text-align:left; font-weight:800; font-size:48px; }
+  .trow .lbl small { display:block; font-weight:600; font-size:32px; opacity:.65; }
+  .trow.lock { opacity:.5; }
+  .trow .st2 { margin-left:auto; font-size:40px; }
+
+  /* event banner */
+  .evt { margin:36px 44px 0; padding:34px 40px; border-radius:36px; display:flex; align-items:center; gap:28px;
+         background:linear-gradient(100deg,rgba(255,198,60,.3),rgba(255,138,60,.16)); border:3px solid rgba(255,198,60,.6);
+         box-shadow:0 0 50px rgba(255,180,50,.35); }
+  .evt .e { font-size:90px; }
+  .evt .t { font-weight:800; font-size:52px; text-align:left; }
+  .evt .t small { display:block; font-weight:700; font-size:40px; color:#ffe08a; }
+
+  .tabs { position:absolute; left:0; right:0; bottom:0; display:flex; padding:22px 10px 34px;
+          background:linear-gradient(180deg,rgba(14,17,33,.9),rgba(8,10,20,.99)); border-top:2px solid rgba(255,255,255,.1); }
+  .tabs div { flex:1; text-align:center; font-weight:700; font-size:26px; color:#6a7292; }
+  .tabs div span { display:block; font-size:44px; margin-bottom:4px; }
+  .tabs div.on { color:#ffc63c; }
+</style>
+</head>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.has('full')) document.body.classList.add('full');
+  if (q.get('size') === '65') { document.documentElement.style.setProperty('--sw','1284px'); document.documentElement.style.setProperty('--sh','2778px'); }
+</script>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="bf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#e8791f"/></linearGradient>
+  <linearGradient id="bt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb0e0"/><stop offset="1" stop-color="#2f5aa0"/></linearGradient>
+  <linearGradient id="be" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd670"/><stop offset="1" stop-color="#e0a021"/></linearGradient>
+  <linearGradient id="br" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8574"/><stop offset="1" stop-color="#c23a30"/></linearGradient>
+  <linearGradient id="bo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ac8b0"/><stop offset="1" stop-color="#1a7a68"/></linearGradient>
+  <linearGradient id="bs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd8e8"/><stop offset="1" stop-color="#8a92a8"/></linearGradient>
+  <linearGradient id="bc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d99a20"/></linearGradient>
+</defs>
+  <symbol id="ic-fire" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bf)"/><ellipse cx="48" cy="78" rx="30" ry="8" fill="#000" opacity=".24"/><path d="M48 18 C60 40 72 50 70 62 C68 74 56 80 48 78 C40 80 28 74 26 62 C24 50 36 40 48 18 Z" fill="#ff5a1c" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M48 36 C56 46 62 54 60 62 C58 70 52 74 48 72 C44 74 38 70 36 62 C34 54 40 46 48 36 Z" fill="#ffcf3c"/><path d="M48 50 C52 56 55 59 54 64 A7 7 0 0 1 42 64 C41 59 44 56 48 50 Z" fill="#fff6d0"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-hunt" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bf)"/><ellipse cx="48" cy="79" rx="30" ry="7" fill="#000" opacity=".22"/><path d="M48 22 L70 76 L48 76 Z" fill="#b0824c" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M48 22 L26 76 L48 76 Z" fill="#d8a670" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M48 76 L54 58 Q48 52 42 58 Z" fill="#2e1d10" stroke="#2c2118" stroke-width="2.4"/><line x1="48" y1="20" x2="40" y2="12" stroke="#6e4626" stroke-width="3.4" stroke-linecap="round"/><line x1="48" y1="20" x2="56" y2="12" stroke="#6e4626" stroke-width="3.4" stroke-linecap="round"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-yurt" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bt)"/><path d="M18 78 L18 54 Q48 48 78 54 L78 78 Z" fill="#e6d8ba" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M14 56 Q48 26 82 56 Z" fill="#f4ead4" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M40 78 L40 60 Q48 55 56 60 L56 78 Z" fill="#6e4626" stroke="#2c2118" stroke-width="2.6" stroke-linejoin="round"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-pyr" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#be)"/><circle cx="72" cy="24" r="11" fill="#fff6cc"/><path d="M46 16 L82 78 L46 78 Z" fill="#c8944a" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M46 16 L10 78 L46 78 Z" fill="#f7d98c" stroke="#2c2118" stroke-width="3" stroke-linejoin="round"/><path d="M46 16 L54 30 L38 30 Z" fill="#ffe89a"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-mosque" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bo)"/><rect x="20" y="46" width="56" height="32" rx="4" fill="#eef4f2" stroke="#1c2436" stroke-width="2.8"/><path d="M26 46 A22 20 0 0 1 70 46 Z" fill="#5ac8b0" stroke="#1c2436" stroke-width="3" stroke-linejoin="round"/><rect x="11" y="28" width="6" height="50" rx="2" fill="#dce8e4" stroke="#1c2436" stroke-width="2.4"/><rect x="79" y="28" width="6" height="50" rx="2" fill="#dce8e4" stroke="#1c2436" stroke-width="2.4"/><path d="M42 78 L42 62 Q48 56 54 62 L54 78 Z" fill="#2f7a68" stroke="#1c2436" stroke-width="2.4" stroke-linejoin="round"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-rocket" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bs)"/><path d="M48 12 C60 22 63 40 60 62 L36 62 C33 40 36 22 48 12 Z" fill="#f2f6ff" stroke="#1c2436" stroke-width="3" stroke-linejoin="round"/><path d="M48 12 C54 20 57 30 58 42 L38 42 C39 30 42 20 48 12 Z" fill="#e24438"/><circle cx="48" cy="40" r="7" fill="#8fd6ff" stroke="#1c2436" stroke-width="2.6"/><path d="M36 62 L28 78 L42 70 M60 62 L68 78 L54 70" fill="#c4cee0"/><path d="M42 70 Q48 88 54 70 Z" fill="#ff9838"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-galaxy" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bc)"/><g transform="translate(48,48)" fill="none" stroke="#8a4a1a" stroke-width="4"><path d="M0 0 Q18 -6 22 12 Q26 30 4 30 Q-18 30 -18 8"/><path d="M0 0 Q-18 6 -22 -12 Q-26 -30 -4 -30 Q18 -30 18 -8"/></g><circle cx="48" cy="48" r="7" fill="#fff6d0"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-mooncolony" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#bt)"/><circle cx="72" cy="20" r="7" fill="#fff4c0"/><path d="M10 70 Q30 62 48 68 Q66 72 86 66 L86 82 L10 82 Z" fill="#c8cfdb" stroke="#1c2436" stroke-width="2.6" stroke-linejoin="round"/><rect x="40" y="48" width="14" height="20" rx="3" fill="#dfe6f2" stroke="#1c2436" stroke-width="2.6"/><path d="M34 48 a14 14 0 0 1 28 0 Z" fill="#9fd8ff" stroke="#1c2436" stroke-width="2.8" stroke-linejoin="round"/><circle cx="48" cy="42" r="4" fill="#bfeaff" stroke="#1c2436" stroke-width="1.8"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-mars" viewBox="0 0 96 96"><rect x="3" y="3" width="90" height="90" rx="25" fill="url(#br)"/><circle cx="40" cy="52" r="26" fill="#d94a2a" stroke="#2c2118" stroke-width="3"/><ellipse cx="30" cy="44" rx="6" ry="4" fill="#a83418" opacity=".7"/><ellipse cx="50" cy="60" rx="7" ry="5" fill="#a83418" opacity=".7"/><path d="M56 12 L76 12 L66 34 Z" fill="#6a7284" stroke="#1c2436" stroke-width="2.8" stroke-linejoin="round"/><line x1="66" y1="32" x2="66" y2="50" stroke="#3a424f" stroke-width="5" stroke-linecap="round"/><rect x="4.6" y="4.6" width="86.8" height="86.8" rx="22.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/></symbol>
+  <symbol id="ic-coin" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#ffcf3c" stroke="#2c2118" stroke-width="3.2"/><circle cx="32" cy="32" r="19" fill="none" stroke="#e0a021" stroke-width="3"/><path d="M32 20 L35.5 28 L44 28.5 L37.5 34 L40 42 L32 37 L24 42 L26.5 34 L20 28.5 L28.5 28 Z" fill="#e0a021"/></symbol>
+  <symbol id="ic-gem" viewBox="0 0 64 64"><path d="M16 10 L48 10 L59 25 L32 57 L5 25 Z" fill="#8d6bff" stroke="#3a2a5a" stroke-width="3.4" stroke-linejoin="round"/><path d="M16 10 L32 25 L48 10 Z" fill="#c8b3ff"/><path d="M5 25 L32 25 L32 57 Z" fill="#7a5cf0"/><path d="M32 25 L59 25 L32 57 Z" fill="#5f3ee0"/></symbol>
+  <symbol id="ic-vortex" viewBox="0 0 64 64"><path d="M32 6 A26 26 0 1 1 6 32" fill="none" stroke="#8d6bff" stroke-width="7.5" stroke-linecap="round"/><path d="M32 18 A14 14 0 1 1 18 32" fill="none" stroke="#c8b3ff" stroke-width="6.5" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#e6dcff"/></symbol>
+</svg>
+
+<!-- ===== 1 · HERO (Stone Age gameplay) ===== -->
+<div class="frame"><div class="shot" style="background:radial-gradient(120% 55% at 50% -6%, rgba(255,150,50,.34), transparent 60%), linear-gradient(180deg,#4a3010 0%,#170f06 60%)">
+  <div class="cap">
+    <div class="head"><span class="g">Build an Empire</span><br>That Spans Time</div>
+    <div class="sub">The idle tycoon journey from the<br>Stone Age all the way to the stars</div>
+  </div>
+  <div class="dev"><div class="gs" style="background:linear-gradient(180deg,#3a2708,#0a0c18 70%)">
+    <div class="cash-row"><svg class="c"><use href="#ic-coin"/></svg><div class="cash">1.24M</div></div>
+    <div class="inc">Income: <b>84.2K/s</b></div>
+    <div class="hchips"><span class="hchip">🔥 Stone Age</span><span class="hchip"><svg><use href="#ic-gem"/></svg> 6</span></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(255,138,60,.28),rgba(10,12,24,.5));border:2px solid rgba(255,138,60,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#ffcf8a,#d95a10)"></span><svg class="ico"><use href="#ic-fire"/></svg><div class="mid"><div class="t">Fire Pit</div><div class="r">26.7K/s</div><div class="m">Next ×2 at 100</div></div><div class="buy" style="background:linear-gradient(180deg,#ffcf8a,#d95a10)">Buy<small>5.6K</small></div></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(255,138,60,.28),rgba(10,12,24,.5));border:2px solid rgba(255,138,60,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#ffcf8a,#d95a10)"></span><svg class="ico"><use href="#ic-hunt"/></svg><div class="mid"><div class="t">Hunting Camp</div><div class="r">9.3K/s</div><div class="m">Next ×2 at 25</div></div><div class="buy" style="background:linear-gradient(180deg,#ffcf8a,#d95a10)">Buy<small>16K</small></div></div>
+    <div class="tabs"><div class="on"><span>🏰</span>Empire</div><div><span>⬆️</span>Upgrades</div><div><span>🎩</span>Managers</div><div><span>🌀</span>Rift</div><div><span>☰</span>More</div></div>
+  </div></div>
+</div></div>
+
+<!-- ===== 2 · 13 ERAS (timeline) ===== -->
+<div class="frame"><div class="shot" style="background:radial-gradient(120% 55% at 50% -6%, rgba(90,150,255,.32), transparent 60%), linear-gradient(180deg,#16294a 0%,#0a0c18 62%)">
+  <div class="stars"></div>
+  <div class="cap">
+    <div class="head">18 Eras.<br><span class="g">Endless Growth.</span></div>
+    <div class="sub">76 unique businesses — every era is<br>a brand-new world to conquer</div>
+  </div>
+  <div class="dev"><div class="gs" style="background:linear-gradient(180deg,#16294a,#0a0c18 72%)">
+    <div class="tl">
+      <div class="trow"><svg class="ico"><use href="#ic-fire"/></svg><div class="lbl">Stone Age<small>Master fire</small></div><span class="st2">✓</span></div>
+      <div class="trow"><svg class="ico"><use href="#ic-yurt"/></svg><div class="lbl">First Turks<small>8 steppe ventures</small></div><span class="st2">✓</span></div>
+      <div class="trow"><svg class="ico"><use href="#ic-pyr"/></svg><div class="lbl">Ancient Egypt<small>Raise the pyramids</small></div><span class="st2">✓</span></div>
+      <div class="trow"><svg class="ico"><use href="#ic-mosque"/></svg><div class="lbl">Ottoman Empire<small>An age of splendor</small></div><span class="st2">✓</span></div>
+      <div class="trow lock"><svg class="ico"><use href="#ic-rocket"/></svg><div class="lbl">Space Age<small>Reach the stars</small></div><span class="st2">🔒</span></div>
+      <div class="trow lock"><svg class="ico"><use href="#ic-galaxy"/></svg><div class="lbl">Cosmic Era<small>Command the universe</small></div><span class="st2">🔒</span></div>
+    </div>
+  </div></div>
+</div></div>
+
+<!-- ===== 3 · IDLE EARNING (managers) ===== -->
+<div class="frame"><div class="shot" style="background:radial-gradient(120% 55% at 50% -6%, rgba(255,205,80,.3), transparent 60%), linear-gradient(180deg,#55400c 0%,#170f06 62%)">
+  <div class="cap">
+    <div class="head"><span class="g">Earn Even</span><br>While You're Away</div>
+    <div class="sub">Hire managers to automate every<br>business — profits pile up offline</div>
+  </div>
+  <div class="dev"><div class="gs" style="background:linear-gradient(180deg,#3a2c08,#0a0c18 70%)">
+    <div class="cash-row"><svg class="c"><use href="#ic-coin"/></svg><div class="cash">2.4B</div></div>
+    <div class="inc">Income: <b>47.7M/s</b></div>
+    <div class="hchips"><span class="hchip">🏺 Ancient Egypt</span><span class="hchip">🌙 Offline 12h</span></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(240,192,32,.26),rgba(10,12,24,.5));border:2px solid rgba(240,192,32,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#ffe89a,#b88a00)"></span><svg class="ico"><use href="#ic-pyr"/></svg><div class="mid"><div class="t">Pyramid Site</div><div class="r">3.2M/s</div><div class="m">🎩 Manager hired</div></div><div class="buy" style="background:linear-gradient(180deg,#ffe89a,#b88a00)">Buy<small>18M</small></div></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(240,192,32,.26),rgba(10,12,24,.5));border:2px solid rgba(240,192,32,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#ffe89a,#b88a00)"></span><svg class="ico"><use href="#ic-hunt"/></svg><div class="mid"><div class="t">Nile Farm</div><div class="r">1.1M/s</div><div class="m">🎩 Manager hired</div></div><div class="buy" style="background:linear-gradient(180deg,#ffe89a,#b88a00)">Buy<small>42M</small></div></div>
+    <div class="tabs"><div><span>🏰</span>Empire</div><div><span>⬆️</span>Upgrades</div><div class="on"><span>🎩</span>Managers</div><div><span>🌀</span>Rift</div><div><span>☰</span>More</div></div>
+  </div></div>
+</div></div>
+
+<!-- ===== 4 · PRESTIGE ===== -->
+<div class="frame"><div class="shot" style="background:radial-gradient(120% 55% at 50% 0%, rgba(141,107,255,.4), transparent 60%), linear-gradient(180deg,#2a1250 0%,#0a0c18 64%)">
+  <div class="stars"></div>
+  <div class="cap">
+    <div class="head">Rebirth.<br><span class="g">Grow Stronger.</span></div>
+    <div class="sub">Spend Chrono Crystals on legendary<br>investors for permanent, compounding power</div>
+  </div>
+  <div class="dev"><div class="gs" style="background:linear-gradient(180deg,#2a1250,#0a0c18 68%)">
+    <div class="prestige">
+      <div class="vx"><svg width="300" height="300"><use href="#ic-vortex"/></svg></div>
+      <div class="big">Time Rift</div>
+      <div class="crys"><svg><use href="#ic-gem"/></svg> 1,240 Crystals</div>
+    </div>
+    <div class="inv"><div class="av">🐺</div><div><div class="t">Bilge Khagan</div><div class="d">✨ Manager speed +20%</div></div><div class="buy">💎 40</div></div>
+    <div class="inv"><div class="av">⚡</div><div><div class="t">Tesla</div><div class="d">✨ ALL income ×2</div></div><div class="buy">💎 1000</div></div>
+  </div></div>
+</div></div>
+
+<!-- ===== 5 · A NEW WORLD EVERY ERA (Space) ===== -->
+<div class="frame"><div class="shot" style="background:radial-gradient(120% 55% at 50% -6%, rgba(110,140,255,.34), transparent 60%), linear-gradient(180deg,#16205e 0%,#0a0c18 62%)">
+  <div class="stars"></div>
+  <div class="cap">
+    <div class="head"><span class="g">A New World</span><br>Every Era</div>
+    <div class="sub">Its own art, backdrop and music —<br>watch the whole game transform</div>
+  </div>
+  <div class="dev"><div class="gs" style="background:linear-gradient(180deg,#16205e,#0a0c18 70%)">
+    <div class="st"></div>
+    <div class="cash-row"><svg class="c"><use href="#ic-coin"/></svg><div class="cash">9.8Sp</div></div>
+    <div class="inc">Income: <b>640Qa/s</b></div>
+    <div class="hchips"><span class="hchip">🚀 Space Age</span><span class="hchip">🔥 ×5 Frenzy</span></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(90,111,240,.3),rgba(10,12,24,.5));border:2px solid rgba(90,111,240,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#a8b8ff,#3442c0)"></span><svg class="ico"><use href="#ic-mooncolony"/></svg><div class="mid"><div class="t">Moon Colony</div><div class="r">88Qa/s</div><div class="m">Next ×2 at 50</div></div><div class="buy" style="background:linear-gradient(180deg,#a8b8ff,#3442c0);color:#fff">Buy<small>803Qa</small></div></div>
+    <div class="gc" style="background:linear-gradient(135deg,rgba(90,111,240,.3),rgba(10,12,24,.5));border:2px solid rgba(90,111,240,.5)"><span style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(180deg,#a8b8ff,#3442c0)"></span><svg class="ico"><use href="#ic-mars"/></svg><div class="mid"><div class="t">Mars Mine</div><div class="r">210Qa/s</div><div class="m">Next ×2 at 25</div></div><div class="buy" style="background:linear-gradient(180deg,#a8b8ff,#3442c0);color:#fff">Buy<small>2.5Qi</small></div></div>
+    <div class="tabs"><div class="on"><span>🏰</span>Empire</div><div><span>⬆️</span>Upgrades</div><div><span>🎩</span>Managers</div><div><span>🌀</span>Rift</div><div><span>☰</span>More</div></div>
+  </div></div>
+</div></div>
+
+</body>
+</html>
