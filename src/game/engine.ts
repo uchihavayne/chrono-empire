@@ -720,8 +720,8 @@ export class GameEngine {
     this.rush = null;
     this.scheduleRush();
     this.state.frenzyUntil = Date.now() + RUSH_FRENZY_S * 1000;
-    // instant reward: a chunk of frenzied production up front
-    const reward = Math.max(this.totalIncomePerSec() * 60, this.state.cash * 0.1, 100);
+    // instant reward: a chunk of frenzied production up front (was 60s + 10% cash — trimmed)
+    const reward = Math.max(this.totalIncomePerSec() * 20, this.state.cash * 0.03, 100);
     this.earn(reward);
     if (this.state.soundOn) audio.sfxReward();
     this.emit();
@@ -1034,7 +1034,8 @@ export class GameEngine {
   private spawnAnomaly(): void {
     const income = this.totalIncomePerSec();
     const golden = (1 + this.skillLevel('golden_touch') * 0.25) * this.investorAnomalyMult();
-    const reward = Math.max(income * 90 * golden, this.state.cash * 0.05 * golden, 50);
+    // was income*90 + 5% of cash — a huge free lump every couple minutes. Cut to ~25s of income.
+    const reward = Math.max(income * 25 * golden, this.state.cash * 0.015 * golden, 50);
     this.anomaly = {
       x: 8 + Math.random() * 74,
       y: 18 + Math.random() * 45,
@@ -1123,8 +1124,8 @@ export class GameEngine {
       if (this.boostActive()) income /= 2;
       if (this.frenzyActive()) income /= RUSH_FRENZY_MULT;
       if (this.eventActive()) income /= this.eventMult();
-      const floor = ERA_BASE[this.eraIndex()] * 6 * q.cashMins;
-      const cash = Math.max(income * q.cashMins * 18, floor);
+      const floor = ERA_BASE[this.eraIndex()] * 1.5 * q.cashMins;
+      const cash = Math.max(income * q.cashMins * 3, floor);
       this.earn(cash);
       out.cash = cash;
     }

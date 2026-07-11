@@ -90,7 +90,10 @@ export function baseCostAt(g: number): number {
  *  by the mid-game raw cash stalls and the Chrono-Crystal prestige multiplier becomes
  *  the only way forward. That rebirth loop is what gives the game its long, daily arc. */
 function paybackAt(g: number): number {
-  return 40 * Math.pow(1.14, g);
+  // 1.30 (was 1.14): income grows much SLOWER than cost per venture, so raw cash falls behind
+  // the cost curve fast. Together with the tamed ×1.6/era income mult this makes progression get
+  // HARDER each era (not easier) — a first run stalls around the mid-game and MUST rebirth.
+  return 40 * Math.pow(1.30, g);
 }
 /** base cycle time (seconds), monotonic; fast early, up to 15 min for the last ventures */
 function baseCycle(g: number): number {
@@ -104,15 +107,15 @@ export const ERA_BASE = ERA_IDS.map((_, i) => baseCostAt(ERA_START_G[i]));
  *  game so raw cash alone can't reach the final eras — you MUST rebirth for the
  *  Chrono-Crystal multiplier to break through. That is the long-term retention wall. */
 const ERA_UNLOCK_FACTOR = [
-  0, 10, 12, 14, 16, 18,          // paleo→iron: gentle early gates
-  22, 28, 36, 48, 66, 95,         // turkic→renaissance
-  140, 220, 360, 650, 1500, 4000, // industrial→cosmic (rebirth wall late)
+  0, 35, 55, 90, 150, 260,                    // paleo→iron: real gates, no free skipping
+  600, 1600, 5000, 18000, 70000, 3e5,         // turkic→renaissance (first run walls in here)
+  1.4e6, 7e6, 4e7, 2.5e8, 1.8e9, 1.5e10,      // industrial→cosmic (many rebirths + ascensions)
 ];
 
 export const ERAS: EraDef[] = ERA_IDS.map((id, i) => ({
   id,
   icon: ERA_ICONS[i],
-  mult: Math.pow(2, i),
+  mult: Math.pow(1.6, i), // per-era income mult (was 2 — that let income explode & outpace cost)
   theme: `era-${id}`,
   unlockCost: i === 0 ? 0 : ERA_BASE[i] * ERA_UNLOCK_FACTOR[i],
 }));
@@ -181,20 +184,22 @@ export interface UpgradeDef {
 // Cash upgrades: three tiers per venture (×3, ×3, ×5) plus global tiers.
 export const UPGRADES: UpgradeDef[] = [
   ...GENERATORS.flatMap((g): UpgradeDef[] => [
-    { id: `${g.id}_u1`, target: g.id, mult: 3, cost: g.baseCost * 1.2e3 },
-    { id: `${g.id}_u2`, target: g.id, mult: 3, cost: g.baseCost * 2e6 },
-    { id: `${g.id}_u3`, target: g.id, mult: 5, cost: g.baseCost * 4e9 },
+    { id: `${g.id}_u1`, target: g.id, mult: 3, cost: g.baseCost * 1.5e3 },
+    { id: `${g.id}_u2`, target: g.id, mult: 3, cost: g.baseCost * 3e6 },
+    { id: `${g.id}_u3`, target: g.id, mult: 4, cost: g.baseCost * 6e9 },
   ]),
+  // Global upgrades: mults tamed (was up to ×7 → total ×661k; now total ~×13.8k) and costs
+  // spaced tighter, so they no longer hand you a flat boost big enough to skip whole eras.
   { id: 'global_1', target: 'all', mult: 2, cost: 1e5 },
-  { id: 'global_2', target: 'all', mult: 2, cost: 1e8 },
-  { id: 'global_3', target: 'all', mult: 3, cost: 1e11 },
-  { id: 'global_4', target: 'all', mult: 3, cost: 1e14 },
-  { id: 'global_5', target: 'all', mult: 3, cost: 1e17 },
-  { id: 'global_6', target: 'all', mult: 5, cost: 1e20 },
-  { id: 'global_7', target: 'all', mult: 5, cost: 1e23 },
-  { id: 'global_8', target: 'all', mult: 5, cost: 1e26 },
-  { id: 'global_9', target: 'all', mult: 7, cost: 1e29 },
-  { id: 'global_10', target: 'all', mult: 7, cost: 1e32 },
+  { id: 'global_2', target: 'all', mult: 2, cost: 3e6 },
+  { id: 'global_3', target: 'all', mult: 2, cost: 1e8 },
+  { id: 'global_4', target: 'all', mult: 2, cost: 4e9 },
+  { id: 'global_5', target: 'all', mult: 2, cost: 1e11 },
+  { id: 'global_6', target: 'all', mult: 3, cost: 3e12 },
+  { id: 'global_7', target: 'all', mult: 3, cost: 1e14 },
+  { id: 'global_8', target: 'all', mult: 3, cost: 4e15 },
+  { id: 'global_9', target: 'all', mult: 4, cost: 1e17 },
+  { id: 'global_10', target: 'all', mult: 4, cost: 3e18 },
 ];
 
 export const UPGRADE_BY_ID: Record<string, UpgradeDef> = Object.fromEntries(
@@ -461,17 +466,17 @@ export const RUSH_MIN_GAP_S = 300;   // ~5–11 min between comets
 export const RUSH_MAX_GAP_S = 660;
 export const RUSH_FLIGHT_S = 9;      // seconds the comet is on screen
 export const RUSH_FRENZY_S = 30;     // frenzy duration after catching
-export const RUSH_FRENZY_MULT = 5;   // ×5 all income during frenzy
+export const RUSH_FRENZY_MULT = 3;   // ×3 all income during frenzy (was 5 — too generous)
 
 // ─── Golden Hour: a scheduled limited-time EVENT that auto-starts periodically ───
 // Rotating themed events give a strong global boost for a few minutes with a live
 // countdown banner — creates "moments" and a reason to keep the game open.
 export interface EventDef { id: string; icon: string; mult: number; boostAnomaly?: boolean }
 export const EVENTS: EventDef[] = [
-  { id: 'golden_hour', icon: '🌟', mult: 3 },
-  { id: 'time_storm',  icon: '🌀', mult: 4, boostAnomaly: true },
-  { id: 'gold_fever',  icon: '💰', mult: 3 },
-  { id: 'chrono_surge',icon: '⚡', mult: 5 },
+  { id: 'golden_hour', icon: '🌟', mult: 2 },
+  { id: 'time_storm',  icon: '🌀', mult: 2, boostAnomaly: true },
+  { id: 'gold_fever',  icon: '💰', mult: 2 },
+  { id: 'chrono_surge',icon: '⚡', mult: 3 },
 ];
 export const EVENT_DURATION_S = 180;      // 3 minutes
 export const EVENT_MIN_GAP_S = 1200;      // ~20–35 min between events
@@ -482,10 +487,14 @@ export const EVENT_AD_EXTEND_S = 180;
 // ─── Prestige math ───
 // Lower base so the FIRST rebirth is reachable a few eras in — you should feel the
 // prestige loop early, then lean on it harder each run to punch through late eras.
-export const CRYSTAL_BASE = 1e10;
+// Raised from 1e10 → 1e34 to match the MUCH harder economy. With the old base, a single
+// rebirth at the (now far deeper) wall handed out trillions of crystals → prestige ×1e11 →
+// you'd skip straight to the end. At 1e34, reaching the final era takes ~20 rebirths (weeks–
+// months of real play), which is the whole point of the idle prestige loop.
+export const CRYSTAL_BASE = 1e34;
 
 export function crystalsForRun(runCash: number): number {
-  if (runCash < CRYSTAL_BASE / 100) return 0;
+  if (runCash < CRYSTAL_BASE / 1e6) return 0; // tiny floor so 0-crystal rebirths don't happen
   return Math.floor(40 * Math.sqrt(runCash / CRYSTAL_BASE));
 }
 
@@ -523,11 +532,11 @@ export function seasonalEvent(now: Date = new Date()): SeasonalEvent | null {
 }
 
 // ─── Ads / boosts ───
-export const AD_BOOST_BASE_HOURS = 4;
-export const TIMEWARP_HOURS = 2;
-export const TIMEWARP_COOLDOWN_MIN = 30;
-export const CRYSTAL_AD_COOLDOWN_MIN = 60;
-export const OFFLINE_CAP_BASE_HOURS = 8;
+export const AD_BOOST_BASE_HOURS = 3;   // ×2 boost duration (was 4h)
+export const TIMEWARP_HOURS = 1;        // instant-collect ad = 1h of production (was 2h)
+export const TIMEWARP_COOLDOWN_MIN = 45;
+export const CRYSTAL_AD_COOLDOWN_MIN = 90;
+export const OFFLINE_CAP_BASE_HOURS = 4; // offline earnings cap (was 8h — too much catch-up)
 export const ANOMALY_MIN_GAP_S = 90;
 export const ANOMALY_MAX_GAP_S = 240;
 export const ANOMALY_LIFETIME_S = 14;
