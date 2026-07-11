@@ -695,6 +695,68 @@ select, .text-input {
 .reveal-name { font-size: 9.5px; font-weight: 700; margin-top: 3px; line-height: 1.05; }
 @keyframes revealPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
+/* ─── big animated box-opening reveal ─── */
+.reveal-overlay {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px;
+  background: radial-gradient(circle at 50% 45%, rgba(30,26,60,0.85), rgba(4,4,10,0.94));
+  backdrop-filter: blur(4px); animation: fadeIn 0.2s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.reveal-box {
+  font-size: 120px; line-height: 1;
+  filter: drop-shadow(0 0 34px rgba(255,215,120,0.65));
+  animation: boxShake 0.6s ease-in-out, boxBurst 0.35s 0.6s forwards;
+}
+@keyframes boxShake { 0%,100% { transform: rotate(0) scale(1); } 15% { transform: rotate(-13deg); } 30% { transform: rotate(13deg); } 45% { transform: rotate(-11deg) scale(1.05); } 60% { transform: rotate(10deg); } 80% { transform: rotate(-6deg) scale(1.1); } }
+@keyframes boxBurst { to { transform: scale(2.1); opacity: 0; } }
+.reveal-sparks { position: absolute; width: 0; height: 0; }
+.reveal-sparks span {
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle, #fff, #ffd66a 60%, transparent);
+  animation: spark 0.5s 0.58s ease-out forwards; opacity: 0;
+}
+@keyframes spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-160px) scale(0.2); } }
+
+.reveal-progress { color: #cfd6e8; font-weight: 800; font-size: 15px; letter-spacing: 1px; }
+.reveal-hint { color: rgba(255,255,255,0.6); font-weight: 700; font-size: 13px; animation: pulseHint 1.2s ease-in-out infinite; }
+@keyframes pulseHint { 0%,100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+
+.big-card { perspective: 1100px; width: 250px; height: 340px; }
+.big-card-inner {
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  animation: cardFlip 0.6s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes cardFlip { 0% { transform: rotateY(180deg) scale(0.7); } 60% { transform: rotateY(0deg) scale(1.06); } 100% { transform: rotateY(0deg) scale(1); } }
+.big-card.exiting .big-card-inner { animation: cardFly 0.3s ease-in forwards; }
+@keyframes cardFly { to { transform: translateX(130%) rotate(22deg) scale(0.85); opacity: 0; } }
+.big-card-face {
+  position: absolute; inset: 0; backface-visibility: hidden; border-radius: 22px;
+  border: 3px solid var(--hi); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; overflow: hidden;
+  box-shadow: 0 0 46px color-mix(in srgb, var(--hi) 55%, transparent), inset 0 2px 0 rgba(255,255,255,0.25);
+}
+.big-card-back {
+  transform: rotateY(180deg); font-size: 96px;
+  background: linear-gradient(150deg, #2a2f4a, #12142a); color: #fff;
+}
+.big-card-front {
+  gap: 8px; background: linear-gradient(160deg, color-mix(in srgb, var(--lo) 30%, #1a1c30), #12142a);
+}
+.bc-rarity { font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--hi); }
+.bc-icon { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5)); }
+.bc-name { font-size: 17px; font-weight: 800; color: #fff; text-align: center; padding: 0 10px; }
+.bc-count { font-size: 15px; font-weight: 800; color: var(--lo); }
+.big-card.rar-legendary .big-card-front { animation: legendGlow 1.6s ease-in-out infinite; }
+@keyframes legendGlow { 0%,100% { box-shadow: 0 0 46px rgba(255,207,90,0.5), inset 0 2px 0 rgba(255,255,255,0.25); } 50% { box-shadow: 0 0 70px rgba(255,207,90,0.85), inset 0 2px 0 rgba(255,255,255,0.35); } }
+
+/* bigger collection cards: 2 columns */
+.card-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+.card-cell { padding: 12px 8px 10px !important; gap: 4px !important; }
+.card-name { font-size: 12.5px !important; height: 28px !important; }
+.card-count { font-size: 16px !important; }
+.card-meta { font-size: 12px !important; }
+
 /* ─── quest bar ─── */
 .quest-bar {
   display: flex; align-items: center; gap: 10px;

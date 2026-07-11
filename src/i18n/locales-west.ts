@@ -126,7 +126,7 @@ export const en: Dict = {
   box_open_free: 'Open', box_open_ad: 'Watch ad', box_done: 'Tomorrow',
   collection_title: 'Card Collection', collection_hint: 'Collect a venture’s cards to auto-run it and boost its profit.',
   collection_empty: 'Open a box to start collecting cards!',
-  card_next: 'Next bonus at {n}', box_reveal: 'New Cards!',
+  card_next: 'Next bonus at {n}', box_reveal: 'New Cards!', reveal_tap: 'Tap to continue',
 };
 
 export const tr: Dict = {
@@ -255,7 +255,7 @@ export const tr: Dict = {
   box_open_free: 'Aç', box_open_ad: 'Reklam izle', box_done: 'Yarın',
   collection_title: 'Kart Koleksiyonu', collection_hint: 'Bir işletmenin kartlarını topla; otomatikleşsin ve kârı artsın.',
   collection_empty: 'Kart toplamaya başlamak için bir kutu aç!',
-  card_next: 'Sonraki bonus: {n}', box_reveal: 'Yeni Kartlar!',
+  card_next: 'Sonraki bonus: {n}', box_reveal: 'Yeni Kartlar!', reveal_tap: 'Devam için dokun',
 };
 
 export const es: Dict = {

@@ -7,7 +7,7 @@ import { formatNumber } from '../game/format';
 import { GEN_BY_ID } from '../game/data';
 import { useGame, useT, useWatchAd } from '../hooks';
 import { GenIcon } from './icons';
-import { Modal } from './Modals';
+import { BoxReveal } from './BoxReveal';
 
 export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
   const engine = useGame();
@@ -15,26 +15,26 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
   const watchAd = useWatchAd();
   const s = engine.state;
   const [reveal, setReveal] = useState<string[] | null>(null);
+  const [revealIcon, setRevealIcon] = useState('📦');
   const [busy, setBusy] = useState(false);
 
   const freeAvail = engine.freeBoxAvailable();
   const needsAd = engine.boxNeedsAd();
   const boxesLeft = engine.boxesLeftToday();
 
+  const show = (d: string[] | null, icon: string) => { if (d) { setRevealIcon(icon); setReveal(d); } };
   const openDaily = () => {
     if (busy) return;
     if (freeAvail) {
-      const d = engine.openDailyBox();
-      if (d) setReveal(d);
+      show(engine.openDailyBox(), '📦');
     } else if (needsAd) {
       setBusy(true);
-      watchAd(() => { const d = engine.openDailyBox(); setBusy(false); if (d) setReveal(d); });
+      watchAd(() => { const d = engine.openDailyBox(); setBusy(false); show(d, '📦'); });
     }
   };
-  const openGem = (id: string, cost: number) => {
+  const openGem = (id: string, cost: number, icon: string) => {
     if (s.gems < cost) { onToast(t('gems_short')); return; }
-    const d = engine.openGemBox(id);
-    if (d) setReveal(d);
+    show(engine.openGemBox(id), icon);
   };
 
   // ventures the player has any cards for, richest first
@@ -74,7 +74,7 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
             <div className="title" style={{ color: RARITY_COLOR[b.rarity][0] }}>{RARITY_LABEL[b.rarity]} {t('box_word')}</div>
             <div className="desc">{t('box_cards_n', { n: b.cards })}</div>
           </div>
-          <button className="action-btn" disabled={s.gems < b.gemCost} onClick={() => openGem(b.id, b.gemCost)}>
+          <button className="action-btn" disabled={s.gems < b.gemCost} onClick={() => openGem(b.id, b.gemCost, b.icon)}>
             💠 {b.gemCost}
           </button>
         </div>
@@ -95,7 +95,7 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
             const managed = n >= MANAGER_CARD_REQ;
             return (
               <div key={c.id} className="card-cell" style={{ borderColor: hi, background: `linear-gradient(160deg, ${lo}22, ${hi}11)` }}>
-                <div className="card-icon"><GenIcon id={c.id} size={40} /></div>
+                <div className="card-icon"><GenIcon id={c.id} size={56} /></div>
                 <div className="card-name">{t(`gen_${c.id}`)}</div>
                 <div className="card-count" style={{ color: lo }}>×{n}</div>
                 <div className="card-meta">
@@ -110,27 +110,8 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
 
       <div style={{ height: 20 }} />
 
-      {/* reveal */}
-      {reveal && (
-        <Modal>
-          <h3 style={{ textAlign: 'center' }}>✨ {t('box_reveal')}</h3>
-          <div className="reveal-grid">
-            {reveal.map((id, i) => {
-              const rar = cardRarity(GEN_BY_ID[id].era);
-              const [lo, hi] = RARITY_COLOR[rar];
-              return (
-                <div key={i} className="reveal-card" style={{ borderColor: hi, animationDelay: `${i * 90}ms` }}>
-                  <GenIcon id={id} size={38} />
-                  <div className="reveal-name">{t(`gen_${id}`)}</div>
-                </div>
-              );
-            })}
-          </div>
-          <button className="action-btn" style={{ width: '100%', padding: 12, marginTop: 10 }} onClick={() => setReveal(null)}>
-            {t('collect')}
-          </button>
-        </Modal>
-      )}
+      {/* animated box-opening reveal */}
+      {reveal && <BoxReveal cards={reveal} boxIcon={revealIcon} onClose={() => setReveal(null)} />}
     </div>
   );
 }
