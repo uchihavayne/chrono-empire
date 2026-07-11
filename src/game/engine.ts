@@ -1159,7 +1159,10 @@ export class GameEngine {
         case 'managers': done = GENERATORS.filter((g) => s.generators[g.id].hasManager).length >= a.n; break;
         case 'era': done = s.erasUnlocked >= a.n; break;
       }
-      if (done) s.achievements.push(a.id);
+      if (done) {
+        s.achievements.push(a.id);
+        s.gems += 15; // every achievement also grants Gems for card boxes
+      }
     }
   }
 
@@ -1186,15 +1189,19 @@ export class GameEngine {
   }
 
   /** claim the current quest reward and advance; returns a short reward label or null */
-  claimQuest(): { crystals?: number; cash?: number } | null {
+  claimQuest(): { crystals?: number; cash?: number; gems?: number } | null {
     const q = this.currentQuest();
     if (!q || !this.questProgress().done) return null;
-    const out: { crystals?: number; cash?: number } = {};
+    const out: { crystals?: number; cash?: number; gems?: number } = {};
     if (q.crystals) {
       this.state.crystals += q.crystals;
       this.state.totalCrystalsEarned += q.crystals;
       out.crystals = q.crystals;
     }
+    // every quest also drops a few Gems for card boxes (steady free-to-play gem income)
+    const gemReward = (q.gems ?? 0) + 10;
+    this.state.gems += gemReward;
+    out.gems = gemReward;
     if (q.cashMins) {
       // reward = a modest slice of production with an era-scaled floor so it never feels tiny.
       // Deliberately small: quests GUIDE progression — they must not hand you cash to skip an era.

@@ -43,8 +43,9 @@ export function QuestBar({ onReward }: { onReward: (msg: string) => void }) {
   const claim = () => {
     const r = engine.claimQuest();
     if (!r) return;
-    if (r.crystals) onReward(`+${r.crystals} 💎`);
-    else if (r.cash) onReward(`+${formatNumber(r.cash, notation)} 💰`);
+    if (r.crystals) onReward(`+${r.crystals} 💎  +${r.gems ?? 0} 💠`);
+    else if (r.cash) onReward(`+${formatNumber(r.cash, notation)} 💰  +${r.gems ?? 0} 💠`);
+    else if (r.gems) onReward(`+${r.gems} 💠`);
   };
 
   return (

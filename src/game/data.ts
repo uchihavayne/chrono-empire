@@ -302,6 +302,7 @@ export interface QuestDef {
   /** cash reward measured in minutes of current production (with an era-scaled floor) */
   cashMins?: number;
   crystals?: number;
+  gems?: number;
 }
 
 export const QUESTS: QuestDef[] = [
