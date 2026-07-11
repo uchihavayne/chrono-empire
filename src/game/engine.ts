@@ -71,7 +71,9 @@ export interface GameState {
   eventIdx: number;
   eventUntil: number;
   lang: string;
-  soundOn: boolean;
+  soundOn: boolean;    // legacy master (kept for migration); use musicOn/sfxOn now
+  musicOn: boolean;
+  sfxOn: boolean;
   notation: 'suffix' | 'scientific';
   createdAt: number;
   /** stable random code identifying this player's cloud backup slot */
@@ -117,7 +119,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 6;
+const VERSION = 7;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -148,6 +150,12 @@ function migrate(save: any): any {
         }
       }
     }
+  }
+  // v6→v7: split the single sound toggle into independent music + SFX toggles.
+  if (v < 7) {
+    const on = save.soundOn !== false;
+    if (typeof save.musicOn !== 'boolean') save.musicOn = on;
+    if (typeof save.sfxOn !== 'boolean') save.sfxOn = on;
   }
   save.version = VERSION;
   return save;
@@ -199,6 +207,8 @@ function defaultState(): GameState {
     eventUntil: 0,
     lang: detectLang(),
     soundOn: true,
+    musicOn: true,
+    sfxOn: true,
     notation: 'suffix',
     createdAt: Date.now(),
     cloudCode: makeCloudCode(),
@@ -463,7 +473,7 @@ export class GameEngine {
     if (cost === null || this.state.cash < cost) return false;
     this.state.cash -= cost;
     this.state.erasUnlocked++;
-    if (this.state.soundOn) audio.sfxUnlock();
+    if (this.state.sfxOn) audio.sfxUnlock();
     this.save();
     this.emit();
     return true;
@@ -508,7 +518,7 @@ export class GameEngine {
   private startRandomEvent(): void {
     this.state.eventIdx = Math.floor(Math.random() * EVENTS.length);
     this.state.eventUntil = Date.now() + EVENT_DURATION_S * 1000;
-    if (this.state.soundOn) audio.sfxUnlock();
+    if (this.state.sfxOn) audio.sfxUnlock();
     this.emit();
   }
 
@@ -577,7 +587,7 @@ export class GameEngine {
     if (!def || this.hasInvestor(id) || this.state.crystals < def.cost) return false;
     this.state.crystals -= def.cost;
     this.state.investors.push(id);
-    if (this.state.soundOn) audio.sfxUnlock();
+    if (this.state.sfxOn) audio.sfxUnlock();
     this.save();
     this.emit();
     return true;
@@ -748,7 +758,7 @@ export class GameEngine {
     // instant reward: a chunk of frenzied production up front (was 60s + 10% cash — trimmed)
     const reward = Math.max(this.totalIncomePerSec() * 20, this.state.cash * 0.03, 100);
     this.earn(reward);
-    if (this.state.soundOn) audio.sfxReward();
+    if (this.state.sfxOn) audio.sfxReward();
     this.emit();
     return reward;
   }
@@ -800,7 +810,7 @@ export class GameEngine {
     if (this.state.cash < cost) return;
     this.state.cash -= cost;
     this.state.generators[genId].count += count;
-    if (this.state.soundOn) audio.sfxBuy();
+    if (this.state.sfxOn) audio.sfxBuy();
     this.emit();
   }
 
@@ -829,7 +839,7 @@ export class GameEngine {
     if (!this.gemAdReady()) return;
     this.state.gems += AD_GEM_REWARD;
     this.state.gemAdReadyAt = Date.now() + GEM_AD_COOLDOWN_MIN * 60 * 1000;
-    if (this.state.soundOn) audio.sfxReward();
+    if (this.state.sfxOn) audio.sfxReward();
     this.save();
     this.emit();
   }
@@ -855,7 +865,7 @@ export class GameEngine {
     const ids = rollBox('uncommon');
     this.grantCards(ids);
     this.state.boxesToday++;
-    if (this.state.soundOn) audio.sfxReward();
+    if (this.state.sfxOn) audio.sfxReward();
     this.save(); this.emit();
     return ids;
   }
@@ -867,7 +877,7 @@ export class GameEngine {
     this.state.gems -= box.gemCost;
     const ids = rollBox(boxId);
     this.grantCards(ids);
-    if (this.state.soundOn) audio.sfxReward();
+    if (this.state.sfxOn) audio.sfxReward();
     this.save(); this.emit();
     return ids;
   }
@@ -941,7 +951,7 @@ export class GameEngine {
     this.scheduleRush();
     this.scheduleEvent();
     this.syncManagers(); // cards persist through ascension → managers re-derive
-    if (s.soundOn) audio.sfxRebirth();
+    if (s.sfxOn) audio.sfxRebirth();
     this.save();
     this.emit();
   }
@@ -974,7 +984,7 @@ export class GameEngine {
     this.scheduleRush();
     this.scheduleEvent();
     this.syncManagers(); // cards persist through rebirth → managers re-derive from the collection
-    if (s.soundOn) audio.sfxRebirth();
+    if (s.sfxOn) audio.sfxRebirth();
     this.save();
     this.emit();
   }
@@ -1129,7 +1139,7 @@ export class GameEngine {
     if (tripled) this.state.adsWatched++;
     this.anomaly = null;
     this.scheduleAnomaly();
-    if (this.state.soundOn) audio.sfxAnomaly();
+    if (this.state.sfxOn) audio.sfxAnomaly();
     this.emit();
     return reward;
   }
@@ -1199,7 +1209,7 @@ export class GameEngine {
       out.cash = cash;
     }
     this.state.questIndex++;
-    if (this.state.soundOn) audio.sfxReward();
+    if (this.state.sfxOn) audio.sfxReward();
     this.save();
     this.emit();
     return out;
@@ -1249,10 +1259,15 @@ export class GameEngine {
     return ERAS[this.eraIndex()].id;
   }
 
-  setSound(on: boolean): void {
-    this.state.soundOn = on;
-    audio.setEnabled(on);
-    if (on) audio.playEra(this.currentEraId());
+  setMusic(on: boolean): void {
+    this.state.musicOn = on;
+    audio.setMusicEnabled(on);
+    this.save();
+    this.emit();
+  }
+
+  setSfx(on: boolean): void {
+    this.state.sfxOn = on;
     this.save();
     this.emit();
   }

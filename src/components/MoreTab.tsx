@@ -249,10 +249,17 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         <option value="scientific">{t('notation_sci')}</option>
       </select>
       <div className="row-card" style={{ marginTop: 4 }}>
-        <div className="icon-tile">{s.soundOn ? '🔊' : '🔇'}</div>
-        <div className="info"><div className="title">{t('sound')}</div></div>
-        <button className={`action-btn${s.soundOn ? '' : ' purple'}`} onClick={() => engine.setSound(!s.soundOn)}>
-          {s.soundOn ? t('on') : t('off')}
+        <div className="icon-tile">🎵</div>
+        <div className="info"><div className="title">{t('music')}</div></div>
+        <button className={`action-btn${s.musicOn ? '' : ' purple'}`} onClick={() => engine.setMusic(!s.musicOn)}>
+          {s.musicOn ? t('on') : t('off')}
+        </button>
+      </div>
+      <div className="row-card" style={{ marginTop: 6 }}>
+        <div className="icon-tile">🔔</div>
+        <div className="info"><div className="title">{t('sfx')}</div></div>
+        <button className={`action-btn${s.sfxOn ? '' : ' purple'}`} onClick={() => engine.setSfx(!s.sfxOn)}>
+          {s.sfxOn ? t('on') : t('off')}
         </button>
       </div>
 

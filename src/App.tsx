@@ -61,21 +61,19 @@ export default function App() {
     engine.start();
   }, [engine]);
 
-  // unlock audio on the first user gesture (autoplay policy), then start era music
+  // unlock audio on the first user gesture (autoplay policy). Always create the ctx (SFX need
+  // it even when music is off); music only starts if enabled.
   useEffect(() => {
     const unlock = () => {
-      if (engine.state.soundOn) audio.unlock(engine.currentEraId());
+      audio.musicEnabled = engine.state.musicOn;
+      audio.unlock(engine.currentEraId());
       window.removeEventListener('pointerdown', unlock);
     };
     window.addEventListener('pointerdown', unlock);
     return () => window.removeEventListener('pointerdown', unlock);
   }, [engine]);
 
-  // switch background music whenever the era changes
   const eraId = engine.currentEraId();
-  useEffect(() => {
-    if (engine.state.soundOn) audio.playEra(eraId);
-  }, [eraId, engine]);
 
   // simulated ad provider for web/localhost testing
   useEffect(() => {
@@ -171,10 +169,10 @@ export default function App() {
           <div className="header">
             <button
               className="sound-toggle"
-              onClick={() => engine.setSound(!s.soundOn)}
+              onClick={() => { const anyOn = s.musicOn || s.sfxOn; engine.setMusic(!anyOn); engine.setSfx(!anyOn); }}
               aria-label="sound"
             >
-              {s.soundOn ? '🔊' : '🔇'}
+              {(s.musicOn || s.sfxOn) ? '🔊' : '🔇'}
             </button>
             <div className="cash-row" data-tut="cash">
               <span className="coin"><CoinIcon size={30} /></span>

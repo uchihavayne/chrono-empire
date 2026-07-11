@@ -59,7 +59,7 @@ class AudioEngine {
   private curEra = '';
   private step = 0;
   private started = false;
-  enabled = true;
+  musicEnabled = true;
 
   private ensure(): boolean {
     if (this.ctx) return true;
@@ -85,7 +85,7 @@ class AudioEngine {
   // ─── single looping background track (replaces the per-era procedural music) ───
   private bg: HTMLAudioElement | null = null;
   private startBg(): void {
-    if (!this.enabled) return;
+    if (!this.musicEnabled) return;
     if (!this.bg) {
       this.bg = new Audio('/bg-music.mp3');
       this.bg.loop = true;
@@ -97,18 +97,19 @@ class AudioEngine {
     if (this.bg) { try { this.bg.pause(); } catch { /* ignore */ } }
   }
 
-  /** call from a user gesture to unlock audio; then start the looping soundtrack */
+  /** call from a user gesture: always create + resume the audio ctx (for SFX), and start the
+   *  soundtrack if music is enabled. SFX and music are independent toggles. */
   unlock(era: string): void {
     this.curEra = era;
-    if (!this.enabled) return;
-    this.ensure();           // for SFX
+    this.ensure();          // ctx needed for SFX even when music is off
     this.ctx?.resume?.();
     this.started = true;
-    this.startBg();
+    this.startBg();         // no-op if music disabled
   }
 
-  setEnabled(on: boolean): void {
-    this.enabled = on;
+  /** music on/off (independent of SFX) */
+  setMusicEnabled(on: boolean): void {
+    this.musicEnabled = on;
     if (!on) {
       this.stopMusic();
       this.stopBg();
@@ -170,7 +171,9 @@ class AudioEngine {
 
   // ─── SFX ───
   private blip(freq: number, dur: number, wave: Wave, vol = 0.4, slideTo?: number): void {
-    if (!this.enabled || !this.ensure() || !this.ctx || !this.sfxGain) return;
+    // SFX are independent of the music toggle; the engine gates these calls by state.sfxOn.
+    if (!this.ensure() || !this.ctx || !this.sfxGain) return;
+    this.ctx.resume?.(); // in case the ctx is suspended (music off, no prior gesture)
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const g = this.ctx.createGain();
