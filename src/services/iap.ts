@@ -23,8 +23,8 @@ export type IapKind = 'noncon' | 'consumable';
 export interface ProductDef {
   id: string;
   kind: IapKind;
-  /** consumable payout: chrono crystals granted on purchase */
-  crystals?: number;
+  /** consumable payout: Gems 💠 granted on purchase (buys card boxes) */
+  gems?: number;
   /** emoji shown on the store card */
   icon: string;
 }
@@ -33,9 +33,9 @@ export interface ProductDef {
 export const PRODUCTS: ProductDef[] = [
   { id: 'remove_ads',   kind: 'noncon',     icon: '🚫' },
   { id: 'starter_pack', kind: 'noncon',     icon: '🎁' },
-  { id: 'crystals_100', kind: 'consumable', crystals: 100,  icon: '💎' },
-  { id: 'crystals_600', kind: 'consumable', crystals: 600,  icon: '💠' },
-  { id: 'crystals_2000', kind: 'consumable', crystals: 2000, icon: '🔮' },
+  { id: 'gems_small',   kind: 'consumable', gems: 120,  icon: '💠' },
+  { id: 'gems_medium',  kind: 'consumable', gems: 650,  icon: '💠' },
+  { id: 'gems_large',   kind: 'consumable', gems: 2000, icon: '💠' },
 ];
 
 export const PRODUCT_BY_ID: Record<string, ProductDef> = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));

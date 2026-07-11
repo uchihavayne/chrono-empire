@@ -3,7 +3,8 @@ import {
   BOXES, CARDS, MANAGER_CARD_REQ, RARITY_COLOR, RARITY_LABEL,
   cardProfitMult, cardRarity, nextCardTier, type Rarity,
 } from '../game/cards';
-import { formatNumber } from '../game/format';
+import { formatNumber, formatDuration } from '../game/format';
+import { AD_GEM_REWARD } from '../game/data';
 import { GEN_BY_ID } from '../game/data';
 import { useGame, useT, useWatchAd } from '../hooks';
 import { GenIcon } from './icons';
@@ -43,11 +44,22 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
 
   return (
     <div>
-      {/* gems balance */}
+      {/* gems balance + free gems */}
       <div className="gems-bar">
         <span className="gems-amt">💠 {formatNumber(s.gems, s.notation)}</span>
         <span className="gems-label">{t('gems')}</span>
       </div>
+      <button
+        className="action-btn gold"
+        style={{ width: '100%', padding: 11, marginTop: 2 }}
+        disabled={!engine.gemAdReady()}
+        onClick={() => watchAd(() => engine.grantGemAd())}
+      >
+        {engine.gemAdReady()
+          ? `📺 ${t('gems_ad', { n: AD_GEM_REWARD })}`
+          : t('gems_ad_wait', { t: formatDuration(engine.gemAdReadyIn() / 1000) })}
+      </button>
+      <p className="hint" style={{ textAlign: 'center', marginTop: 4 }}>{t('gems_shop_hint')}</p>
 
       {/* boxes */}
       <div className="section-title">🎁 {t('boxes_title')}</div>

@@ -88,9 +88,9 @@ export const en: Dict = {
   shop_confirm_title: 'Confirm purchase', shop_sim_note: 'Simulated purchase — real charges happen on the phone build.',
   iap_remove_ads_t: 'No-Ads Pass — every ad reward instantly, no ads',
   iap_starter_pack_t: 'Starter Pack — permanent ×2 income',
-  iap_crystals_100_t: '100 Chrono Crystals',
-  iap_crystals_600_t: '600 Chrono Crystals',
-  iap_crystals_2000_t: '2000 Chrono Crystals',
+  iap_gems_small_t: '120 Gems 💠',
+  iap_gems_medium_t: '650 Gems 💠 (+8% bonus)',
+  iap_gems_large_t: '2000 Gems 💠 (+25% bonus)',
   cloud_title: 'Cloud Backup',
   cloud_hint: 'Save your progress to the cloud so you never lose it when you change or reset your device.',
   cloud_code: 'Your backup code', cloud_backup_btn: 'Back up now', cloud_restore_btn: 'Restore',
@@ -127,6 +127,8 @@ export const en: Dict = {
   collection_title: 'Card Collection', collection_hint: 'Collect a venture’s cards to auto-run it and boost its profit.',
   collection_empty: 'Open a box to start collecting cards!',
   card_next: 'Next bonus at {n}', box_reveal: 'New Cards!', reveal_tap: 'Tap to continue',
+  gems_ad: 'Watch ad → +{n} 💠', gems_ad_wait: 'More gems in {t}',
+  gems_shop_hint: 'Get gem packs in More → Shop.',
 };
 
 export const tr: Dict = {
@@ -217,9 +219,9 @@ export const tr: Dict = {
   shop_confirm_title: 'Satın alımı onayla', shop_sim_note: 'Simüle satın alım — gerçek ödeme telefon sürümünde yapılır.',
   iap_remove_ads_t: 'Reklamsız Geçiş — tüm reklam ödülleri anında, reklamsız',
   iap_starter_pack_t: 'Başlangıç Paketi — kalıcı ×2 gelir',
-  iap_crystals_100_t: '100 Chrono Kristali',
-  iap_crystals_600_t: '600 Chrono Kristali',
-  iap_crystals_2000_t: '2000 Chrono Kristali',
+  iap_gems_small_t: '120 Elmas 💠',
+  iap_gems_medium_t: '650 Elmas 💠 (+%8 bonus)',
+  iap_gems_large_t: '2000 Elmas 💠 (+%25 bonus)',
   cloud_title: 'Bulut Yedekleme',
   cloud_hint: 'İlerlemeni buluta kaydet; cihaz değiştirince veya sıfırlayınca asla kaybetme.',
   cloud_code: 'Yedekleme kodun', cloud_backup_btn: 'Şimdi yedekle', cloud_restore_btn: 'Geri Yükle',
@@ -256,6 +258,8 @@ export const tr: Dict = {
   collection_title: 'Kart Koleksiyonu', collection_hint: 'Bir işletmenin kartlarını topla; otomatikleşsin ve kârı artsın.',
   collection_empty: 'Kart toplamaya başlamak için bir kutu aç!',
   card_next: 'Sonraki bonus: {n}', box_reveal: 'Yeni Kartlar!', reveal_tap: 'Devam için dokun',
+  gems_ad: 'Reklam izle → +{n} 💠', gems_ad_wait: 'Yeni elmas {t} sonra',
+  gems_shop_hint: 'Elmas paketleri: Daha Fazla → Mağaza.',
 };
 
 export const es: Dict = {

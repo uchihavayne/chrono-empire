@@ -536,6 +536,8 @@ export const AD_BOOST_BASE_HOURS = 3;   // ×2 boost duration (was 4h)
 export const TIMEWARP_HOURS = 1;        // instant-collect ad = 1h of production (was 2h)
 export const TIMEWARP_COOLDOWN_MIN = 45;
 export const CRYSTAL_AD_COOLDOWN_MIN = 90;
+export const AD_GEM_REWARD = 20;        // gems from a "watch ad for gems" view
+export const GEM_AD_COOLDOWN_MIN = 30;  // cooldown between free gem ads
 export const OFFLINE_CAP_BASE_HOURS = 4; // offline earnings cap (was 8h — too much catch-up)
 export const ANOMALY_MIN_GAP_S = 90;
 export const ANOMALY_MAX_GAP_S = 240;

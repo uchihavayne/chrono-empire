@@ -1,6 +1,7 @@
 import {
   ACHIEVEMENTS, ACH_BONUS, AD_BOOST_BASE_HOURS, ANOMALY_LIFETIME_S, ANOMALY_MAX_GAP_S,
-  ANOMALY_MIN_GAP_S, CRYSTAL_AD_COOLDOWN_MIN, DAILY_REWARDS, ERAS, ERA_BASE,
+  AD_GEM_REWARD, ANOMALY_MIN_GAP_S, CRYSTAL_AD_COOLDOWN_MIN, DAILY_REWARDS, ERAS, ERA_BASE,
+  GEM_AD_COOLDOWN_MIN,
   EVENTS, EVENT_AD_EXTEND_S, EVENT_DURATION_S, EVENT_MAX_GAP_S, EVENT_MIN_GAP_S,
   GENERATORS, GEN_BY_ID,
   INVESTORS, INVESTOR_BY_ID, OFFLINE_CAP_BASE_HOURS, QUESTS, RANK_BONUS_PER_TIER,
@@ -52,6 +53,8 @@ export interface GameState {
   boostUntil: number;
   timewarpReadyAt: number;
   crystalAdReadyAt: number;
+  /** timestamp when the free "watch ad for gems" is next available */
+  gemAdReadyAt: number;
   lastSeen: number;
   lastDailyDate: string;
   dailyStreak: number;
@@ -182,6 +185,7 @@ function defaultState(): GameState {
     boostUntil: 0,
     timewarpReadyAt: 0,
     crystalAdReadyAt: 0,
+    gemAdReadyAt: 0,
     lastSeen: Date.now(),
     lastDailyDate: '',
     dailyStreak: 0,
@@ -375,9 +379,8 @@ export class GameEngine {
       this.state.iapOwned.push(productId);
       if (productId === 'remove_ads') this.state.removeAds = true;
       if (productId === 'starter_pack') this.state.starterPack = true;
-    } else if (p.crystals) {
-      this.state.crystals += p.crystals;
-      this.state.totalCrystalsEarned += p.crystals;
+    } else if (p.gems) {
+      this.state.gems += p.gems;
     }
     this.save();
     this.emit();
@@ -818,6 +821,18 @@ export class GameEngine {
   }
   cardCount(venture: string): number { return this.state.cards[venture] ?? 0; }
   addGems(n: number): void { this.state.gems += n; this.save(); this.emit(); }
+
+  // free "watch ad for gems" with a cooldown
+  gemAdReady(): boolean { return Date.now() >= this.state.gemAdReadyAt; }
+  gemAdReadyIn(): number { return Math.max(0, this.state.gemAdReadyAt - Date.now()); }
+  grantGemAd(): void {
+    if (!this.gemAdReady()) return;
+    this.state.gems += AD_GEM_REWARD;
+    this.state.gemAdReadyAt = Date.now() + GEM_AD_COOLDOWN_MIN * 60 * 1000;
+    if (this.state.soundOn) audio.sfxReward();
+    this.save();
+    this.emit();
+  }
 
   private refreshBoxDay(): void {
     const today = this.todayStr();
