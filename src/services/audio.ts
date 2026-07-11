@@ -82,23 +82,40 @@ class AudioEngine {
     }
   }
 
-  /** call from a user gesture to unlock audio; then start the current era track */
-  unlock(era: string): void {
+  // ─── single looping background track (replaces the per-era procedural music) ───
+  private bg: HTMLAudioElement | null = null;
+  private startBg(): void {
     if (!this.enabled) return;
-    if (!this.ensure()) return;
-    this.ctx!.resume?.();
+    if (!this.bg) {
+      this.bg = new Audio('/bg-music.mp3');
+      this.bg.loop = true;
+      this.bg.volume = 0.35;
+    }
+    this.bg.play().catch(() => { /* autoplay blocked until a gesture — retried on next unlock */ });
+  }
+  private stopBg(): void {
+    if (this.bg) { try { this.bg.pause(); } catch { /* ignore */ } }
+  }
+
+  /** call from a user gesture to unlock audio; then start the looping soundtrack */
+  unlock(era: string): void {
+    this.curEra = era;
+    if (!this.enabled) return;
+    this.ensure();           // for SFX
+    this.ctx?.resume?.();
     this.started = true;
-    this.playEra(era);
+    this.startBg();
   }
 
   setEnabled(on: boolean): void {
     this.enabled = on;
     if (!on) {
       this.stopMusic();
-    } else if (this.started && this.curEra) {
+      this.stopBg();
+    } else if (this.started) {
       this.ensure();
       this.ctx?.resume?.();
-      this.playEra(this.curEra, true);
+      this.startBg();
     }
   }
 
@@ -106,19 +123,9 @@ class AudioEngine {
     if (this.stepTimer !== null) { clearInterval(this.stepTimer); this.stepTimer = null; }
   }
 
-  /** switch background music to an era (no-op if already playing it) */
-  playEra(era: string, force = false): void {
-    if (!this.enabled || !this.started) { this.curEra = era; return; }
-    if (era === this.curEra && this.stepTimer !== null && !force) return;
+  /** era changed — the single soundtrack keeps playing; just track the current era. */
+  playEra(era: string, _force = false): void {
     this.curEra = era;
-    if (!this.ensure()) return;
-    this.stopMusic();
-    const m = ERA_MUSIC[era] ?? ERA_MUSIC.paleo;
-    const stepMs = (60 / m.bpm / 2) * 1000; // eighth notes
-    this.step = 0;
-    // soft evolving pad underneath
-    this.playPad(m);
-    this.stepTimer = window.setInterval(() => this.tickMusic(m), stepMs);
   }
 
   private padOsc: OscillatorNode[] = [];

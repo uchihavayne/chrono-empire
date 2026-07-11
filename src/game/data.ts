@@ -137,7 +137,7 @@ export const GENERATORS: GeneratorDef[] = (() => {
         costRate: 1.11 - 0.02 * f,          // 1.11 (cheap slots) → 1.09 (pricey slots)
         cycleTime,
         baseRev: Math.max((baseCost * cycleTime) / paybackAt(g), 1),
-        managerCost: baseCost * (220 - 150 * f), // 220× (slot 0) → 70× (top slot)
+        managerCost: baseCost * (650 - 400 * f), // 650× (slot 0) → 250× (top): automation is now a real investment, not instant
       });
       g++;
     });
