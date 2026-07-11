@@ -52,6 +52,13 @@ workflows:
             '<key>signingStyle</key><string>automatic</string>' \
             '<key>destination</key><string>export</string>' \
             '</dict></plist>' > /tmp/export.plist
+      - name: Fetch a local distribution certificate + profile
+        script: |
+          # Put an "iOS Distribution" certificate into the keychain (and the matching profile on
+          # disk) so the EXPORT step can sign locally instead of failing on cloud signing.
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
       - name: Archive (Xcode-managed automatic signing via the API key)
         script: |
           # Codemagic already placed the .p8 on disk; $APP_STORE_CONNECT_PRIVATE_KEY holds an
@@ -67,15 +74,12 @@ workflows:
             archive
       - name: Export the .ipa
         script: |
-          KEY_PATH="${APP_STORE_CONNECT_PRIVATE_KEY#@file:}"
+          # Export with the LOCAL certificate + profile fetched earlier (no cloud-signing flags),
+          # which avoids the "Cloud signing permission error" that App-Manager keys hit on export.
           xcodebuild -exportArchive \
             -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
             -exportPath "$CM_BUILD_DIR/build/ipa" \
-            -exportOptionsPlist /tmp/export.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -exportOptionsPlist /tmp/export.plist
     artifacts:
       - build/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
