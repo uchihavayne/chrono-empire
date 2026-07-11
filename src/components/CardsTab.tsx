@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   BOXES, CARDS, MANAGER_CARD_REQ, RARITY_COLOR, RARITY_LABEL,
-  cardProfitMult, cardRarity, nextCardTier, type Rarity,
+  cardProfitMult, cardTierIndex, nextCardTier,
 } from '../game/cards';
+import type { TierUp } from './BoxReveal';
 import { formatNumber, formatDuration } from '../game/format';
 import { AD_GEM_REWARD } from '../game/data';
 import { GEN_BY_ID } from '../game/data';
@@ -17,25 +18,38 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
   const s = engine.state;
   const [reveal, setReveal] = useState<string[] | null>(null);
   const [revealIcon, setRevealIcon] = useState('📦');
+  const [tierUps, setTierUps] = useState<TierUp[]>([]);
   const [busy, setBusy] = useState(false);
 
   const freeAvail = engine.freeBoxAvailable();
   const needsAd = engine.boxNeedsAd();
   const boxesLeft = engine.boxesLeftToday();
 
-  const show = (d: string[] | null, icon: string) => { if (d) { setRevealIcon(icon); setReveal(d); } };
+  // open a box, then detect any ventures that crossed a card threshold (manager unlock or a new
+  // profit tier) so the reveal can celebrate them.
+  const openWith = (fn: () => string[] | null, icon: string) => {
+    const before = { ...s.cards };
+    const drawn = fn();
+    if (!drawn) return;
+    const ups: TierUp[] = [];
+    for (const id of [...new Set(drawn)]) {
+      const b = before[id] ?? 0;
+      const a = engine.cardCount(id);
+      if (b < MANAGER_CARD_REQ && a >= MANAGER_CARD_REQ) ups.push({ id, kind: 'manager', mult: cardProfitMult(a) });
+      else if (cardTierIndex(a) > cardTierIndex(b)) ups.push({ id, kind: 'profit', mult: cardProfitMult(a) });
+    }
+    setTierUps(ups);
+    setRevealIcon(icon);
+    setReveal(drawn);
+  };
   const openDaily = () => {
     if (busy) return;
-    if (freeAvail) {
-      show(engine.openDailyBox(), '📦');
-    } else if (needsAd) {
-      setBusy(true);
-      watchAd(() => { const d = engine.openDailyBox(); setBusy(false); show(d, '📦'); });
-    }
+    if (freeAvail) openWith(() => engine.openDailyBox(), '📦');
+    else if (needsAd) { setBusy(true); watchAd(() => { setBusy(false); openWith(() => engine.openDailyBox(), '📦'); }); }
   };
   const openGem = (id: string, cost: number, icon: string) => {
     if (s.gems < cost) { onToast(t('gems_short')); return; }
-    show(engine.openGemBox(id), icon);
+    openWith(() => engine.openGemBox(id), icon);
   };
 
   // ventures the player has any cards for, richest first
@@ -123,7 +137,7 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
       <div style={{ height: 20 }} />
 
       {/* animated box-opening reveal */}
-      {reveal && <BoxReveal cards={reveal} boxIcon={revealIcon} onClose={() => setReveal(null)} />}
+      {reveal && <BoxReveal cards={reveal} boxIcon={revealIcon} tierUps={tierUps} onClose={() => setReveal(null)} />}
     </div>
   );
 }

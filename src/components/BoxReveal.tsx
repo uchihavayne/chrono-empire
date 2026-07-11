@@ -4,12 +4,18 @@ import { GEN_BY_ID } from '../game/data';
 import { useGame, useT } from '../hooks';
 import { GenIcon } from './icons';
 
+export interface TierUp { id: string; kind: 'manager' | 'profit'; mult: number }
+
 /** Full-screen box-opening experience: the box shakes & bursts, then cards flip in one at a
- *  time — tap to send the current card flying away and reveal the next. */
-export function BoxReveal({ cards, boxIcon, onClose }: { cards: string[]; boxIcon: string; onClose: () => void }) {
+ *  time — tap to send the current card flying away and reveal the next. If collecting the box
+ *  crossed a card threshold, a "merge" celebration plays at the end. */
+export function BoxReveal(
+  { cards, boxIcon, tierUps = [], onClose }:
+  { cards: string[]; boxIcon: string; tierUps?: TierUp[]; onClose: () => void },
+) {
   const engine = useGame();
   const t = useT();
-  const [phase, setPhase] = useState<'box' | 'cards'>('box');
+  const [phase, setPhase] = useState<'box' | 'cards' | 'merge'>('box');
   const [idx, setIdx] = useState(0);
   const [exiting, setExiting] = useState(false);
 
@@ -20,8 +26,13 @@ export function BoxReveal({ cards, boxIcon, onClose }: { cards: string[]; boxIco
   }, [phase]);
 
   const advance = () => {
+    if (phase === 'merge') { onClose(); return; }
     if (phase !== 'cards' || exiting) return;
-    if (idx >= cards.length - 1) { onClose(); return; }
+    if (idx >= cards.length - 1) {
+      if (tierUps.length) { setPhase('merge'); return; }
+      onClose();
+      return;
+    }
     setExiting(true);
     setTimeout(() => { setIdx((i) => i + 1); setExiting(false); }, 300);
   };
@@ -33,6 +44,28 @@ export function BoxReveal({ cards, boxIcon, onClose }: { cards: string[]; boxIco
         <div className="reveal-sparks">
           {[...Array(8)].map((_, i) => <span key={i} style={{ ['--a' as string]: `${i * 45}deg` }} />)}
         </div>
+      </div>
+    );
+  }
+
+  if (phase === 'merge') {
+    return (
+      <div className="reveal-overlay" onClick={advance}>
+        <div className="merge-title">✨ {t('merge_title')} ✨</div>
+        <div className="merge-list">
+          {tierUps.map((u, i) => (
+            <div key={u.id} className="merge-item" style={{ animationDelay: `${i * 140}ms` }}>
+              <div className="merge-icon"><GenIcon id={u.id} size={52} /></div>
+              <div className="merge-info">
+                <div className="merge-name">{t(`gen_${u.id}`)}</div>
+                <div className="merge-bonus">
+                  {u.kind === 'manager' ? `⚙️ ${t('merge_auto')}` : `📈 ${t('merge_profit', { n: u.mult.toFixed(1) })}`}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="reveal-hint">{t('reveal_tap')}</div>
       </div>
     );
   }

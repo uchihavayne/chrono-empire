@@ -63,6 +63,12 @@ export function cardProfitMult(count: number): number {
 export function cardManagerUnlocked(count: number): boolean {
   return count >= MANAGER_CARD_REQ;
 }
+/** how many profit tiers a card count has reached (0..CARD_TIERS.length) */
+export function cardTierIndex(count: number): number {
+  let i = 0;
+  for (const tth of CARD_TIERS) if (count >= tth) i++;
+  return i;
+}
 /** next threshold the player is working toward, or null if maxed */
 export function nextCardTier(count: number): number | null {
   for (const t of CARD_TIERS) if (count < t) return t;
