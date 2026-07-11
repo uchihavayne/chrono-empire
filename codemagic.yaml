@@ -21,10 +21,12 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
-      # NOTE: no `ios_signing:` block on purpose. That triggers Codemagic's automatic signing
-      # which only FETCHES profiles and fails on a first build ("No matching profiles found").
-      # We do signing explicitly below with `fetch-signing-files --create`, which CREATES the
-      # distribution certificate + provisioning profile when they don't exist yet.
+      # The profile + certificate now exist (created by the earlier `--create` build), so the
+      # automatic ios_signing block can fetch them and `use-profiles` can apply them to the
+      # generated Capacitor "App" target — the canonical Capacitor+Codemagic signing recipe.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.chronoempire.game
       vars:
         BUNDLE_ID: "com.chronoempire.game"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
