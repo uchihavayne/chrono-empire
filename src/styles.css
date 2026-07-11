@@ -750,6 +750,16 @@ select, .text-input {
 .big-card.rar-legendary .big-card-front { animation: legendGlow 1.6s ease-in-out infinite; }
 @keyframes legendGlow { 0%,100% { box-shadow: 0 0 46px rgba(255,207,90,0.5), inset 0 2px 0 rgba(255,255,255,0.25); } 50% { box-shadow: 0 0 70px rgba(255,207,90,0.85), inset 0 2px 0 rgba(255,255,255,0.35); } }
 
+/* collapsible section header (More tab declutter) */
+.collapse-head {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--card-border, rgba(255,255,255,0.08));
+  border-radius: 12px; color: var(--gold, #ffd24a); font-family: inherit; font-weight: 800;
+  font-size: 14px; padding: 12px 14px; margin-top: 14px; cursor: pointer;
+}
+.collapse-head:active { transform: scale(0.99); }
+.collapse-sub { color: var(--text-dim); font-size: 12px; font-weight: 700; }
+
 /* ─── spotlight tutorial ─── */
 .spot-overlay { position: fixed; inset: 0; z-index: 60; animation: fadeIn 0.25s; }
 .spot-hole {

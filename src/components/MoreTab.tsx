@@ -27,6 +27,8 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
   const [resetting, setResetting] = useState(false);
   const importRef = useRef<HTMLTextAreaElement>(null);
   const [showImport, setShowImport] = useState(false);
+  const [showAch, setShowAch] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
   const [showRestore, setShowRestore] = useState(false);
@@ -97,29 +99,43 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         {s.dailyClaimable ? t('claim') : t('daily_done')}
       </button>
 
-      {/* achievements */}
-      <div className="section-title">🏆 {t('ach_title')}</div>
-      <p className="hint">{t('ach_bonus', { a: s.achievements.length, b: ACHIEVEMENTS.length })}</p>
-      <div className="ach-grid">
-        {ACHIEVEMENTS.map((a) => {
-          const done = s.achievements.includes(a.id);
-          return (
-            <div key={a.id} className={`ach-card${done ? ' unlocked' : ''}`}>
-              <span className="a-emoji">{done ? '🏆' : '🔒'}</span>
-              <div>{achText(t, a, s.notation)}</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* achievements (collapsed by default to keep this tab tidy) */}
+      <button className="collapse-head" onClick={() => setShowAch((v) => !v)}>
+        <span>🏆 {t('ach_title')}</span>
+        <span className="collapse-sub">{s.achievements.length}/{ACHIEVEMENTS.length} {showAch ? '▲' : '▼'}</span>
+      </button>
+      {showAch && (
+        <>
+          <p className="hint">{t('ach_bonus', { a: s.achievements.length, b: ACHIEVEMENTS.length })}</p>
+          <div className="ach-grid">
+            {ACHIEVEMENTS.map((a) => {
+              const done = s.achievements.includes(a.id);
+              return (
+                <div key={a.id} className={`ach-card${done ? ' unlocked' : ''}`}>
+                  <span className="a-emoji">{done ? '🏆' : '🔒'}</span>
+                  <div>{achText(t, a, s.notation)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      {/* stats */}
-      <div className="section-title">📊 {t('stats_title')}</div>
-      <div className="stat-row"><span>{t('stat_lifetime')}</span><span>{formatNumber(s.lifetimeCash, s.notation)}</span></div>
-      <div className="stat-row"><span>{t('stat_run')}</span><span>{formatNumber(s.runCash, s.notation)}</span></div>
-      <div className="stat-row"><span>{t('time_travels', { n: '' }).replace(':', '').trim()}</span><span>{s.rebirths}</span></div>
-      <div className="stat-row"><span>{t('stat_crystals_total')}</span><span>{formatNumber(s.totalCrystalsEarned, s.notation)}</span></div>
-      <div className="stat-row"><span>{t('stat_ads')}</span><span>{s.adsWatched}</span></div>
-      <div className="stat-row"><span>{t('stat_anomalies')}</span><span>{s.anomaliesCaught}</span></div>
+      {/* stats (collapsed) */}
+      <button className="collapse-head" onClick={() => setShowStats((v) => !v)}>
+        <span>📊 {t('stats_title')}</span>
+        <span className="collapse-sub">{showStats ? '▲' : '▼'}</span>
+      </button>
+      {showStats && (
+        <>
+          <div className="stat-row"><span>{t('stat_lifetime')}</span><span>{formatNumber(s.lifetimeCash, s.notation)}</span></div>
+          <div className="stat-row"><span>{t('stat_run')}</span><span>{formatNumber(s.runCash, s.notation)}</span></div>
+          <div className="stat-row"><span>{t('time_travels', { n: '' }).replace(':', '').trim()}</span><span>{s.rebirths}</span></div>
+          <div className="stat-row"><span>{t('stat_crystals_total')}</span><span>{formatNumber(s.totalCrystalsEarned, s.notation)}</span></div>
+          <div className="stat-row"><span>{t('stat_ads')}</span><span>{s.adsWatched}</span></div>
+          <div className="stat-row"><span>{t('stat_anomalies')}</span><span>{s.anomaliesCaught}</span></div>
+        </>
+      )}
 
       {/* leaderboard */}
       <div className="section-title">🏅 {t('lb_title')}</div>
