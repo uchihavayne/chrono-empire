@@ -7,25 +7,23 @@ import { registerAdSimulator, showRewardedAd } from './services/ads';
 import { registerPurchaseSimulator, PRODUCT_BY_ID } from './services/iap';
 import { scheduleRetention, cancelRetention } from './services/notify';
 import { EmpireTab } from './components/EmpireTab';
-import { UpgradesTab } from './components/UpgradesTab';
-import { ManagersTab } from './components/ManagersTab';
+import { CardsTab } from './components/CardsTab';
 import { RebirthTab } from './components/RebirthTab';
 import { MoreTab } from './components/MoreTab';
 import { BoostsModal } from './components/BoostsModal';
 import { Modal } from './components/Modals';
-import { CastleIcon, CoinIcon, CometIcon, GemIcon, HatIcon, MenuIcon, TvIcon, UpIcon, VortexIcon } from './components/icons';
+import { CastleIcon, CoinIcon, CometIcon, GemIcon, MenuIcon, TvIcon, VortexIcon } from './components/icons';
 import { RANKS } from './game/data';
 import { audio } from './services/audio';
 import { EraBackdrop } from './components/EraBackdrop';
 import { Showcase } from './components/Showcase';
 import { Tutorial } from './components/Tutorial';
 
-type Tab = 'empire' | 'upgrades' | 'managers' | 'rebirth' | 'more';
+type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
 const TABS: { id: Tab; icon: ReactNode }[] = [
   { id: 'empire', icon: <CastleIcon size={23} /> },
-  { id: 'upgrades', icon: <UpIcon size={23} /> },
-  { id: 'managers', icon: <HatIcon size={23} /> },
+  { id: 'cards', icon: <span style={{ fontSize: 21, lineHeight: 1 }}>🃏</span> },
   { id: 'rebirth', icon: <VortexIcon size={23} /> },
   { id: 'more', icon: <MenuIcon size={23} /> },
 ];
@@ -233,8 +231,7 @@ export default function App() {
           {/* content */}
           <div className="content">
             {tab === 'empire' && <EmpireTab onToast={onToast} viewedEra={viewedEra} setViewedEra={setViewedEra} />}
-            {tab === 'upgrades' && <UpgradesTab />}
-            {tab === 'managers' && <ManagersTab />}
+            {tab === 'cards' && <CardsTab onToast={onToast} />}
             {tab === 'rebirth' && <RebirthTab />}
             {tab === 'more' && <MoreTab onToast={onToast} />}
           </div>

@@ -2,7 +2,7 @@ import type { Dict } from './types';
 
 export const en: Dict = {
   app_name: 'Chrono Empire',
-  tab_empire: 'Empire', tab_upgrades: 'Upgrades', tab_managers: 'Managers', tab_rebirth: 'Time Rift', tab_more: 'More',
+  tab_empire: 'Empire', tab_cards: 'Cards', tab_upgrades: 'Upgrades', tab_managers: 'Managers', tab_rebirth: 'Time Rift', tab_more: 'More',
   income: 'Income', per_sec: '/s', era_label: 'Era', boost_left: '×2 Boost: {t}',
   gen_firepit: 'Fire Pit', gen_huntcamp: 'Hunting Camp', gen_papyrus: 'Papyrus Workshop', gen_bazaar: 'Roman Bazaar',
   gen_forge: 'Blacksmith Guild', gen_atelier: 'Art Atelier', gen_steamworks: 'Steam Factory', gen_technocorp: 'Tech Corporation',
@@ -120,11 +120,18 @@ export const en: Dict = {
   season_newyear: 'New Year Bash', season_halloween: 'Spooky Night',
   lb_title: 'Leaderboard', lb_hint: 'Your score: {v} — rank up by earning Chrono Crystals.',
   lb_name_ph: 'Your name', lb_submit: 'Submit', lb_submitted: 'Score submitted ✓',
+  gems: 'Gems', gems_short: 'Not enough gems',
+  boxes_title: 'Card Boxes', box_word: 'Box', box_cards_n: '{n} cards',
+  box_daily: 'Daily Box', box_daily_left: '{n} left today',
+  box_open_free: 'Open', box_open_ad: 'Watch ad', box_done: 'Tomorrow',
+  collection_title: 'Card Collection', collection_hint: 'Collect a venture’s cards to auto-run it and boost its profit.',
+  collection_empty: 'Open a box to start collecting cards!',
+  card_next: 'Next bonus at {n}', box_reveal: 'New Cards!',
 };
 
 export const tr: Dict = {
   app_name: 'Chrono Empire',
-  tab_empire: 'İmparatorluk', tab_upgrades: 'Geliştirme', tab_managers: 'Yöneticiler', tab_rebirth: 'Zaman Yarığı', tab_more: 'Daha Fazla',
+  tab_empire: 'İmparatorluk', tab_cards: 'Kartlar', tab_upgrades: 'Geliştirme', tab_managers: 'Yöneticiler', tab_rebirth: 'Zaman Yarığı', tab_more: 'Daha Fazla',
   income: 'Gelir', per_sec: '/sn', era_label: 'Çağ', boost_left: '×2 Güç: {t}',
   gen_firepit: 'Ateş Çukuru', gen_huntcamp: 'Avcı Kampı', gen_papyrus: 'Papirüs Atölyesi', gen_bazaar: 'Roma Pazarı',
   gen_forge: 'Demirci Loncası', gen_atelier: 'Sanat Atölyesi', gen_steamworks: 'Buhar Fabrikası', gen_technocorp: 'Teknoloji Şirketi',
@@ -242,6 +249,13 @@ export const tr: Dict = {
   season_newyear: 'Yılbaşı Şöleni', season_halloween: 'Korku Gecesi',
   lb_title: 'Lider Tablosu', lb_hint: 'Puanın: {v} — Chrono Kristali kazanarak yüksel.',
   lb_name_ph: 'Adın', lb_submit: 'Gönder', lb_submitted: 'Puan gönderildi ✓',
+  gems: 'Elmas', gems_short: 'Yeterli elmas yok',
+  boxes_title: 'Kart Kutuları', box_word: 'Kutu', box_cards_n: '{n} kart',
+  box_daily: 'Günlük Kutu', box_daily_left: 'Bugün {n} kaldı',
+  box_open_free: 'Aç', box_open_ad: 'Reklam izle', box_done: 'Yarın',
+  collection_title: 'Kart Koleksiyonu', collection_hint: 'Bir işletmenin kartlarını topla; otomatikleşsin ve kârı artsın.',
+  collection_empty: 'Kart toplamaya başlamak için bir kutu aç!',
+  card_next: 'Sonraki bonus: {n}', box_reveal: 'Yeni Kartlar!',
 };
 
 export const es: Dict = {

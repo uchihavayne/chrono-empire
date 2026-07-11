@@ -16,6 +16,10 @@ import { audio } from '../services/audio';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
+import {
+  BOX_BY_ID, cardManagerUnlocked, cardProfitMult, FREE_BOX_PER_DAY, MANAGER_CARD_REQ,
+  MAX_BOXES_PER_DAY, rollBox,
+} from './cards';
 
 export interface GeneratorState {
   count: number;
@@ -87,6 +91,13 @@ export interface GameState {
   tutorialDone: boolean;
   /** display name shown on the global leaderboard */
   playerName: string;
+  /** premium Gems 💠 currency (buys card boxes; separate from Chrono Crystals) */
+  gems: number;
+  /** collected card counts per venture id (a permanent meta-collection) */
+  cards: Record<string, number>;
+  /** boxes opened today (free + ad) and the date, for the daily limit */
+  boxesToday: number;
+  lastBoxDate: string;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -103,7 +114,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 5;
+const VERSION = 6;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -123,6 +134,18 @@ function migrate(save: any): any {
   // between Paleolithic and First Turks — shift every unlocked-past-Paleolithic player +5
   // so the same civilizations they already reached remain unlocked.
   if (v < 5) bumpEras(5);
+  // v5→v6: cash upgrades/managers replaced by the CARD system. Grant existing players the
+  // cards for every venture they'd already automated, so they keep their managers.
+  if (v < 6) {
+    if (!save.cards || typeof save.cards !== 'object') save.cards = {};
+    if (save.generators && typeof save.generators === 'object') {
+      for (const id in save.generators) {
+        if (save.generators[id]?.hasManager) {
+          save.cards[id] = Math.max(save.cards[id] ?? 0, MANAGER_CARD_REQ);
+        }
+      }
+    }
+  }
   save.version = VERSION;
   return save;
 }
@@ -184,6 +207,10 @@ function defaultState(): GameState {
     ascensionStartCrystals: 0,
     tutorialDone: false,
     playerName: '',
+    gems: 100, // starter gems so a new player can open a couple of boxes right away
+    cards: {},
+    boxesToday: 0,
+    lastBoxDate: '',
   };
 }
 
@@ -210,6 +237,7 @@ export class GameEngine {
 
   constructor() {
     this.state = this.load();
+    this.syncManagers(); // managers derive from the (persistent) card collection
     this.applyOfflineProgress();
     this.refreshDaily();
     this.scheduleAnomaly();
@@ -571,10 +599,7 @@ export class GameEngine {
     if (this.boostActive()) m *= 2;
     if (this.frenzyActive()) m *= RUSH_FRENZY_MULT;
     if (this.eventActive()) m *= this.eventMult();
-    for (const id of this.state.upgrades) {
-      const u = UPGRADE_BY_ID[id];
-      if (u && u.target === 'all') m *= u.mult;
-    }
+    // (cash upgrades removed — profit boosts now come from collected cards, per venture)
     return m;
   }
 
@@ -586,11 +611,8 @@ export class GameEngine {
   }
 
   generatorMult(genId: string): number {
-    let m = 1;
-    for (const id of this.state.upgrades) {
-      const u = UPGRADE_BY_ID[id];
-      if (u && u.target === genId) m *= u.mult;
-    }
+    // profit multiplier from this venture's collected cards (replaces the old cash upgrades)
+    let m = cardProfitMult(this.state.cards[genId] ?? 0);
     const era = GEN_BY_ID[genId].era;
     // era "collection" bonus: complete the set to double the whole era's output
     if (this.eraSetComplete(era)) m *= SET_BONUS_MULT;
@@ -779,25 +801,60 @@ export class GameEngine {
     this.emit();
   }
 
-  buyManager(genId: string): void {
-    const g = GEN_BY_ID[genId];
-    const gs = this.state.generators[genId];
-    if (gs.hasManager || this.state.cash < g.managerCost) return;
-    this.state.cash -= g.managerCost;
-    gs.hasManager = true;
-    if (this.state.soundOn) audio.sfxManager();
-    this.emit();
+  // Managers and profit boosts now come from CARDS, not cash. These stay as no-ops so any
+  // legacy callers don't break; the Managers/Upgrades tabs are replaced by the Cards tab.
+  buyManager(_genId: string): void { /* managers are card-gated now — see syncManagers() */ }
+  buyUpgrade(_upgradeId: string): void { /* cash upgrades removed — profit comes from cards */ }
+
+  // ─── cards & boxes ───
+  /** a venture auto-runs once you've collected MANAGER_CARD_REQ of its card */
+  syncManagers(): void {
+    for (const g of GENERATORS) {
+      const gs = this.state.generators[g.id];
+      const active = cardManagerUnlocked(this.state.cards[g.id] ?? 0);
+      gs.hasManager = active;
+      if (!active) { gs.running = false; gs.progress = 0; }
+    }
+  }
+  cardCount(venture: string): number { return this.state.cards[venture] ?? 0; }
+  addGems(n: number): void { this.state.gems += n; this.save(); this.emit(); }
+
+  private refreshBoxDay(): void {
+    const today = this.todayStr();
+    if (this.state.lastBoxDate !== today) { this.state.lastBoxDate = today; this.state.boxesToday = 0; }
+  }
+  boxesLeftToday(): number { this.refreshBoxDay(); return Math.max(0, MAX_BOXES_PER_DAY - this.state.boxesToday); }
+  freeBoxAvailable(): boolean { this.refreshBoxDay(); return this.state.boxesToday < FREE_BOX_PER_DAY; }
+  /** opening the daily box past the free one (but under the cap) requires watching an ad */
+  boxNeedsAd(): boolean { this.refreshBoxDay(); return this.state.boxesToday >= FREE_BOX_PER_DAY && this.state.boxesToday < MAX_BOXES_PER_DAY; }
+
+  private grantCards(ids: string[]): void {
+    for (const id of ids) this.state.cards[id] = (this.state.cards[id] ?? 0) + 1;
+    this.syncManagers();
   }
 
-  buyUpgrade(upgradeId: string): void {
-    const u = UPGRADE_BY_ID[upgradeId];
-    if (!u || this.state.upgrades.includes(upgradeId) || this.state.cash < u.cost) return;
-    // generator upgrades require owning at least one
-    if (u.target !== 'all' && this.state.generators[u.target].count === 0) return;
-    this.state.cash -= u.cost;
-    this.state.upgrades.push(upgradeId);
-    if (this.state.soundOn) audio.sfxBuy();
-    this.emit();
+  /** open the free/ad daily Uncommon box → drawn card ids, or null if the daily cap is hit */
+  openDailyBox(): string[] | null {
+    this.refreshBoxDay();
+    if (this.state.boxesToday >= MAX_BOXES_PER_DAY) return null;
+    const ids = rollBox('uncommon');
+    this.grantCards(ids);
+    this.state.boxesToday++;
+    if (this.state.soundOn) audio.sfxReward();
+    this.save(); this.emit();
+    return ids;
+  }
+
+  /** open a gem-bought box → drawn card ids, or null if not enough gems */
+  openGemBox(boxId: string): string[] | null {
+    const box = BOX_BY_ID[boxId];
+    if (!box || box.gemCost <= 0 || this.state.gems < box.gemCost) return null;
+    this.state.gems -= box.gemCost;
+    const ids = rollBox(boxId);
+    this.grantCards(ids);
+    if (this.state.soundOn) audio.sfxReward();
+    this.save(); this.emit();
+    return ids;
   }
 
   buySkill(skillId: string): void {
@@ -868,6 +925,7 @@ export class GameEngine {
     this.scheduleAnomaly();
     this.scheduleRush();
     this.scheduleEvent();
+    this.syncManagers(); // cards persist through ascension → managers re-derive
     if (s.soundOn) audio.sfxRebirth();
     this.save();
     this.emit();
@@ -892,11 +950,6 @@ export class GameEngine {
       s.generators['huntcamp'].count = hs * 8;
       s.generators['mammoth'].count = hs * 3;
     }
-    // keep_managers skill
-    const km = this.skillLevel('keep_managers');
-    for (let i = 0; i < km && i < GENERATORS.length; i++) {
-      s.generators[GENERATORS[i].id].hasManager = true;
-    }
     s.boostUntil = 0;
     s.frenzyUntil = 0;
     s.eventIdx = -1;
@@ -905,6 +958,7 @@ export class GameEngine {
     this.scheduleAnomaly();
     this.scheduleRush();
     this.scheduleEvent();
+    this.syncManagers(); // cards persist through rebirth → managers re-derive from the collection
     if (s.soundOn) audio.sfxRebirth();
     this.save();
     this.emit();

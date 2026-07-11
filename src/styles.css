@@ -670,6 +670,31 @@ select, .text-input {
 .lb-name { flex: 1; min-width: 0; font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-score { font-weight: 800; font-size: 13px; color: #c4b0ff; }
 
+/* ─── cards / boxes ─── */
+.gems-bar { display: flex; align-items: baseline; gap: 8px; justify-content: center; padding: 8px 0 2px; }
+.gems-amt { font-size: 22px; font-weight: 800; color: #8fd6ff; }
+.gems-label { font-size: 12px; color: var(--text-dim); font-weight: 700; }
+.box-row { border-width: 1.5px !important; }
+.card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.card-cell {
+  border: 1.5px solid; border-radius: 14px; padding: 8px 6px 7px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.card-icon { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+.card-name { font-size: 10.5px; font-weight: 700; line-height: 1.1; height: 24px; overflow: hidden; }
+.card-count { font-size: 13px; font-weight: 800; }
+.card-meta { font-size: 10.5px; font-weight: 700; }
+.card-auto { color: #7ce0a0; }
+.card-lock { color: var(--text-dim); }
+.card-next { font-size: 9px; color: var(--text-dim); opacity: 0.8; }
+.reveal-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0 4px; }
+.reveal-card {
+  border: 2px solid; border-radius: 12px; padding: 8px 6px; width: 78px; text-align: center;
+  background: rgba(255,255,255,0.05); animation: revealPop 0.4s cubic-bezier(.2,1.4,.4,1) both;
+}
+.reveal-name { font-size: 9.5px; font-weight: 700; margin-top: 3px; line-height: 1.05; }
+@keyframes revealPop { 0% { transform: scale(0.3) rotate(-12deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+
 /* ─── quest bar ─── */
 .quest-bar {
   display: flex; align-items: center; gap: 10px;
