@@ -21,9 +21,10 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.chronoempire.game
+      # NOTE: no `ios_signing:` block on purpose. That triggers Codemagic's automatic signing
+      # which only FETCHES profiles and fails on a first build ("No matching profiles found").
+      # We do signing explicitly below with `fetch-signing-files --create`, which CREATES the
+      # distribution certificate + provisioning profile when they don't exist yet.
       vars:
         BUNDLE_ID: "com.chronoempire.game"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
