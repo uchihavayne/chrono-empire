@@ -39,8 +39,16 @@ workflows:
           npx cap sync ios
       - name: Generate app icon & splash
         script: npx @capacitor/assets generate --ios || true
-      - name: Set up code signing
-        script: xcode-project use-profiles
+      - name: Set up code signing (create the cert + profile if they don't exist yet)
+        script: |
+          keychain initialize
+          # --create makes the missing App Store provisioning profile AND distribution
+          # certificate on first run, fixing "No matching profiles found".
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build the .ipa
         script: |
           xcode-project build-ipa \
