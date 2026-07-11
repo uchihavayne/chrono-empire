@@ -44,7 +44,11 @@ workflows:
       - name: Write App Store Connect API key + export options
         script: |
           mkdir -p ~/asc
-          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/asc/key.p8
+          # diagnostics (no secrets leaked — only presence/length)
+          echo "ISSUER set: ${APP_STORE_CONNECT_ISSUER_ID:+yes}  KEY_ID set: ${APP_STORE_CONNECT_KEY_IDENTIFIER:+yes}  PRIVATE_KEY length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
+          # write the key. %b turns any escaped \n back into real newlines so the PEM is valid.
+          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/asc/key.p8
+          echo "key.p8 first line: $(head -1 ~/asc/key.p8)  size: $(wc -c < ~/asc/key.p8) bytes"
           printf '%s\n' \
             '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
