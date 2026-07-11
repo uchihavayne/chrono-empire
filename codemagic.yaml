@@ -41,14 +41,8 @@ workflows:
           npx cap sync ios
       - name: Generate app icon & splash
         script: npx @capacitor/assets generate --ios || true
-      - name: Write App Store Connect API key + export options
+      - name: Create export options
         script: |
-          mkdir -p ~/asc
-          # diagnostics (no secrets leaked — only presence/length)
-          echo "ISSUER set: ${APP_STORE_CONNECT_ISSUER_ID:+yes}  KEY_ID set: ${APP_STORE_CONNECT_KEY_IDENTIFIER:+yes}  PRIVATE_KEY length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
-          # write the key. %b turns any escaped \n back into real newlines so the PEM is valid.
-          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/asc/key.p8
-          echo "key.p8 first line: $(head -1 ~/asc/key.p8)  size: $(wc -c < ~/asc/key.p8) bytes"
           printf '%s\n' \
             '<?xml version="1.0" encoding="UTF-8"?>' \
             '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
@@ -60,22 +54,26 @@ workflows:
             '</dict></plist>' > /tmp/export.plist
       - name: Archive (Xcode-managed automatic signing via the API key)
         script: |
+          # Codemagic already placed the .p8 on disk; $APP_STORE_CONNECT_PRIVATE_KEY holds an
+          # "@file:<path>" reference to it. Strip the prefix to get the real path.
+          KEY_PATH="${APP_STORE_CONNECT_PRIVATE_KEY#@file:}"
           xcodebuild -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" \
             -configuration Release -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath ~/asc/key.p8 \
+            -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
             archive
       - name: Export the .ipa
         script: |
+          KEY_PATH="${APP_STORE_CONNECT_PRIVATE_KEY#@file:}"
           xcodebuild -exportArchive \
             -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
             -exportPath "$CM_BUILD_DIR/build/ipa" \
             -exportOptionsPlist /tmp/export.plist \
             -allowProvisioningUpdates \
-            -authenticationKeyPath ~/asc/key.p8 \
+            -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
     artifacts:
