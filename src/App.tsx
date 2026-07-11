@@ -17,7 +17,7 @@ import { RANKS } from './game/data';
 import { audio } from './services/audio';
 import { EraBackdrop } from './components/EraBackdrop';
 import { Showcase } from './components/Showcase';
-import { Tutorial } from './components/Tutorial';
+import { SpotlightTutorial } from './components/SpotlightTutorial';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -176,7 +176,7 @@ export default function App() {
             >
               {s.soundOn ? '🔊' : '🔇'}
             </button>
-            <div className="cash-row">
+            <div className="cash-row" data-tut="cash">
               <span className="coin"><CoinIcon size={30} /></span>
               <div className="cash">{formatNumber(s.cash, s.notation)}</div>
             </div>
@@ -274,7 +274,7 @@ export default function App() {
           {/* tab bar */}
           <div className="tabbar">
             {TABS.map((tb) => (
-              <button key={tb.id} className={tab === tb.id ? 'active' : ''} onClick={() => setTab(tb.id)}>
+              <button key={tb.id} data-tut={tb.id} className={tab === tb.id ? 'active' : ''} onClick={() => setTab(tb.id)}>
                 {tb.id === 'rebirth' && engine.canRebirth() && <span className="dot" />}
                 <span className="ticon">{tb.icon}</span>
                 {t(`tab_${tb.id}`)}
@@ -357,7 +357,7 @@ export default function App() {
             </Modal>
           )}
 
-          {!s.tutorialDone && <Tutorial />}
+          {!s.tutorialDone && tab === 'empire' && <SpotlightTutorial />}
 
           {toast && <div className="toast" key={toast.key}>{toast.msg}</div>}
         </div>

@@ -129,6 +129,10 @@ export const en: Dict = {
   card_next: 'Next bonus at {n}', box_reveal: 'New Cards!', reveal_tap: 'Tap to continue',
   gems_ad: 'Watch ad → +{n} 💠', gems_ad_wait: 'More gems in {t}',
   gems_shop_hint: 'Get gem packs in More → Shop.',
+  spot_buy_t: 'Buy your first venture', spot_buy_d: 'Tap Buy to purchase a business. More copies = more income.',
+  spot_cash_t: 'Your money', spot_cash_d: 'This is your cash — it grows automatically once businesses have managers.',
+  spot_cards_t: 'Cards tab', spot_cards_d: 'Open boxes here to collect cards. Cards auto-run your businesses and boost their profit.',
+  spot_rift_t: 'Time Rift', spot_rift_d: 'When growth slows, rebirth here for Chrono Crystals — a permanent boost that makes every run faster.',
 };
 
 export const tr: Dict = {
@@ -260,6 +264,10 @@ export const tr: Dict = {
   card_next: 'Sonraki bonus: {n}', box_reveal: 'Yeni Kartlar!', reveal_tap: 'Devam için dokun',
   gems_ad: 'Reklam izle → +{n} 💠', gems_ad_wait: 'Yeni elmas {t} sonra',
   gems_shop_hint: 'Elmas paketleri: Daha Fazla → Mağaza.',
+  spot_buy_t: 'İlk işletmeni al', spot_buy_d: 'İşletme almak için Satın Al’a dokun. Ne kadar çok, o kadar gelir.',
+  spot_cash_t: 'Paran', spot_cash_d: 'Bu senin paran — işletmelerin yöneticisi olunca otomatik artar.',
+  spot_cards_t: 'Kartlar sekmesi', spot_cards_d: 'Buradan kutu açıp kart topla. Kartlar işletmeni otomatikleştirir ve kârı artırır.',
+  spot_rift_t: 'Zaman Yarığı', spot_rift_d: 'Büyüme yavaşlayınca buradan Chrono Kristali için yeniden doğ — her turu hızlandıran kalıcı güç.',
 };
 
 export const es: Dict = {

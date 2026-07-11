@@ -750,6 +750,31 @@ select, .text-input {
 .big-card.rar-legendary .big-card-front { animation: legendGlow 1.6s ease-in-out infinite; }
 @keyframes legendGlow { 0%,100% { box-shadow: 0 0 46px rgba(255,207,90,0.5), inset 0 2px 0 rgba(255,255,255,0.25); } 50% { box-shadow: 0 0 70px rgba(255,207,90,0.85), inset 0 2px 0 rgba(255,255,255,0.35); } }
 
+/* ─── spotlight tutorial ─── */
+.spot-overlay { position: fixed; inset: 0; z-index: 60; animation: fadeIn 0.25s; }
+.spot-hole {
+  position: absolute; border-radius: 12px; pointer-events: none;
+  border: 2.5px solid #ffd66a;
+  box-shadow: 0 0 0 9999px rgba(4,6,16,0.82), 0 0 0 4px rgba(255,214,106,0.35);
+  animation: spotPulse 1.3s ease-in-out infinite;
+}
+@keyframes spotPulse {
+  0%,100% { box-shadow: 0 0 0 9999px rgba(4,6,16,0.82), 0 0 0 4px rgba(255,214,106,0.4); }
+  50% { box-shadow: 0 0 0 9999px rgba(4,6,16,0.82), 0 0 0 11px rgba(255,214,106,0.1); }
+}
+.spot-bubble {
+  position: absolute; background: linear-gradient(160deg, #262a48, #15172c);
+  border: 1px solid rgba(141,107,255,0.45); border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.55); z-index: 61;
+}
+.spot-title { font-weight: 800; font-size: 16.5px; margin-bottom: 5px; color: #fff; }
+.spot-text { font-size: 13.5px; color: var(--text-dim); line-height: 1.5; font-weight: 600; }
+.spot-dots { display: flex; gap: 6px; justify-content: center; margin: 12px 0 10px; }
+.spot-dots span { width: 8px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.25); transition: width 0.2s; }
+.spot-dots span.on { width: 20px; background: #8d6bff; }
+.spot-actions { display: flex; gap: 8px; }
+.spot-actions button { flex: 1; padding: 11px; }
+
 /* bigger collection cards: 2 columns */
 .card-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
 .card-cell { padding: 12px 8px 10px !important; gap: 4px !important; }
