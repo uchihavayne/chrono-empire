@@ -1,59 +1,52 @@
-# Chrono Empire — Zaman İmparatorluğu 🕰️
+# Idle Chrono Empire 🕰️
 
-Zaman yolculuğu temalı idle/tycoon oyunu (AdVenture Capitalist tarzı, yeni mekaniklerle).
-Vite + React + TypeScript + Capacitor. iOS öncelikli, Android destekli.
+A time-travel **idle / tycoon** game — start a campfire in the Stone Age and grow it into a
+galaxy-spanning empire. Vite + React + TypeScript + Capacitor. iOS-first, Android-ready.
 
-## Özellikler
+> Live on TestFlight · App Store name: **Idle Chrono Empire** · bundle `com.chronoempire.game`
 
-- **9 bölüm (çağ) = 9 dünya**: Taş Devri → Antik Mısır → Roma → Orta Çağ → Rönesans → Sanayi → Modern → Uzay → Uzak Gelecek. Her çağ parayla açılır; açınca **4 yeni işletme + kalıcı ×2 global çarpan + yeni tema** gelir.
-- **36 işletme** (çağ başına 4), kilometre taşı çarpanları (10/25/50/100/200… adette ×2), yöneticilerle tam otomasyon. Her işletme için el çizimi SVG ikon.
-- **118 yükseltme** (işletme bazlı ×3/×3/×5 + 10 global çarpan).
-- **Denge modeli**: çağ maliyet ölçeği ×2500, slot geri ödeme hedefleri 40 sn / 4 dk / 20 dk / 80 dk; ilk rebirth ~3-4. çağ civarına denk gelir (`src/game/data.ts` başındaki yorumda belgeli).
-- **Rebirth — "Zaman Yarığı"**: Kronos Kristali kazan (her biri kalıcı +%2 gelir), 8 dallı yetenek ağacına harca (çevrimdışı limit, maliyet indirimi, hız, başlangıç bonusu, yönetici koruma…).
-- **Reklam mekanikleri (AdMob rewarded)**: ×2 kâr boostu (uzatılabilir), Zaman Sıçraması (anında 2 saatlik üretim), bedava kristal, çevrimdışı kazancı ikiye katlama, anomali ödülünü üçe katlama. Web'de simüle reklam oynar.
-- **Zaman Anomalisi**: 1,5–4 dakikada bir beliren, dokununca ödül veren baloncuk.
-- **Günlük ödül serisi** (7 günlük döngü), **27 başarım** (+%2 gelir/başarım), çevrimdışı kazanç (8–24 saat), otomatik kayıt + dışa/içe aktarma.
-- **12 dil**: EN, TR, ZH, HI, ES, FR, AR (RTL), PT, RU, JA, DE, KO — cihaz dilini otomatik algılar.
+## Features
 
-## Geliştirme (PC'de test)
+- **18 historical eras · 76 businesses** — from the first campfire and the early Turkic steppe to
+  Ancient Egypt, Rome, the Ottoman court, the Industrial Revolution, the Space Age and the birth of
+  galaxies. Each era is unlocked with cash and brings new businesses, art and a themed background.
+- **Idle income** — your empire keeps earning while the app is closed (offline earnings + a catch-up
+  report on return).
+- **Card / gacha system** — open loot boxes to collect cards; cards auto-run your businesses
+  (managers) and boost their profit. Free daily box + rewarded-ad boxes + gem boxes.
+- **Two prestige layers** — *Rebirth* for Chrono Crystals (permanent income boost + a skill tree),
+  then *Ascension* for Eon Crystals once you've rebirthed enough.
+- **Live-ops & rewards** — timed Golden Hour events, Golden Rush comets, time anomalies, a 57-step
+  quest chain, achievements, daily-reward streak, and a global leaderboard.
+- **Cloud backup** — restore your empire on any device via an anonymous backup code (Firebase).
+- **12 languages** — EN, TR, ZH, HI, ES, FR, AR (RTL), PT, RU, JA, DE, KO. Auto-detects device
+  language.
+- **Monetization** — AdMob rewarded ads (all optional) + in-app purchases (No-Ads Pass, Starter
+  Pack, gem packs). Ads are simulated on web/desktop for testing.
+
+## Develop (test on PC)
 
 ```bash
 npm install
 npm run dev        # http://localhost:5199
 ```
 
-## Mobil derleme (Capacitor)
+## iOS build & publish
 
-İlk kurulum (bir kez):
+Built on a cloud Mac via **Codemagic** (the `ios/` project is committed and `codemagic.yaml`
+drives archive → App Store Connect / TestFlight), so a local Mac is not required. Push to `main`
+and start a build in Codemagic.
 
-```bash
-npm run build
-npx cap add ios        # macOS + Xcode gerekir
-npx cap add android    # Android Studio gerekir
-```
+## Architecture
 
-Sonraki derlemeler:
+- `src/game/data.ts` — all balance data (eras, businesses, cards, prestige, quests, achievements, events)
+- `src/game/engine.ts` — game loop, save/load, offline progress, prestige math (exposed as `window.__engine` in dev)
+- `src/game/cards.ts` — card / loot-box model
+- `src/i18n/` — the 12-language dictionaries
+- `src/services/` — ads (AdMob), iap (RevenueCat), cloud + leaderboard (Firebase), notifications, audio
+- `src/components/` — tabs (Empire / Cards / Time Rift / More) and modals
 
-```bash
-npm run cap:ios        # build + sync + Xcode'da aç
-npm run cap:android    # build + sync + Android Studio'da aç
-```
+## Legal
 
-## Yayın öncesi kontrol listesi
-
-1. **AdMob**: `capacitor.config.ts` içindeki `appIdIos` / `appIdAndroid` ve
-   `src/services/ads.ts` içindeki `REWARDED_ID_IOS` / `REWARDED_ID_ANDROID`
-   değerlerini kendi AdMob kimliklerinle değiştir (şu an Google'ın resmî TEST kimlikleri).
-2. **iOS**: Xcode'da App Icon + Launch Screen ekle; Info.plist'e AdMob için
-   `GADApplicationIdentifier` (Capacitor sync bunu config'den ekler) ve App Tracking
-   Transparency açıklaması (`NSUserTrackingUsageDescription`) ekle.
-3. **Android**: `android/app/build.gradle` sürüm kodu/imzalama; Play Console veri güvenliği formu.
-4. Bundle ID: `com.chronoempire.game` (değiştirmek istersen `capacitor.config.ts`).
-
-## Mimari
-
-- `src/game/data.ts` — tüm denge verileri (işletmeler, çağlar, yetenekler, başarımlar, reklam sabitleri)
-- `src/game/engine.ts` — oyun döngüsü (100 ms tick), kayıt/yükleme, çevrimdışı ilerleme, prestij matematiği
-- `src/i18n/` — 12 dilin sözlükleri
-- `src/services/ads.ts` — AdMob rewarded ad sarmalayıcı (web'de simülasyon)
-- `src/components/` — sekmeler ve modallar
+- Privacy Policy: https://uchihavayne.github.io/chrono-empire/privacy.html
+- Support: https://uchihavayne.github.io/chrono-empire/
