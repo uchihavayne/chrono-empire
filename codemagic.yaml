@@ -48,35 +48,28 @@ workflows:
           # Fail loudly (set -e) so a broken signing step can't go green and blow up later.
           set -e
           keychain initialize
-          # Apple caps DISTRIBUTION certificates per account, and each ephemeral build makes a new
-          # private key, so we hit the cap and Apple 409s ("You already have a current Distribution
-          # certificate"). The existing certs have no usable private key on THIS machine, so revoke
-          # ALL distribution certs to free a slot, then create a fresh one whose key we control.
-          # (List EVERYTHING and filter in python so we don't depend on a specific --type flag or
-          # JSON shape; dump the raw list to the log so any format surprise is visible.)
-          app-store-connect certificates list --json > /tmp/certs.json 2>/tmp/certs.err || {
-            echo "certificates list failed:"; cat /tmp/certs.err; echo "[]" > /tmp/certs.json;
-          }
-          echo "=== raw certificate list ==="; cat /tmp/certs.json; echo
-          # Tolerate either a bare array or a {data:[...]} wrapper, and certificateType at either
-          # .attributes.certificateType or top level. jq is preinstalled on the Codemagic mac.
-          CERT_IDS=$(jq -r '(.data // .)[]? | select(((.attributes.certificateType // .certificateType) // "" | ascii_upcase) | test("DISTRIBUTION")) | .id' /tmp/certs.json 2>/dev/null || true)
-          echo "Distribution certs to revoke: ${CERT_IDS:-<none>}"
-          for CID in $CERT_IDS; do
-            echo "Revoking distribution certificate $CID"
-            app-store-connect certificates delete "$CID" --yes \
-              || printf 'y\n' | app-store-connect certificates delete "$CID" \
-              || true
-          done
-          # fetch-signing-files needs a certificate PRIVATE KEY to create a distribution cert — it
-          # won't generate one itself ("Cannot create resource without certificate private key").
+          # PERMANENT signing key: reuse the SAME distribution private key every build. On the first
+          # build fetch-signing-files creates ONE cert for this key; every later build finds that
+          # existing cert (its key matches) and REUSES it — so we never create a new cert, never hit
+          # Apple's distribution-cert cap, and never touch your OTHER apps' certificates.
+          #  - Preferred: store the PEM key as a Codemagic secure env var DIST_CERT_KEY.
+          #  - Fallback (first bootstrap run): generate a fresh key. Requires being under the cert cap
+          #    (delete the orphaned Chrono Empire distribution certs in the Apple portal first).
           CERT_KEY=/tmp/dist_cert_key.pem
-          openssl genrsa -out "$CERT_KEY" 2048
+          if [ -n "$DIST_CERT_KEY" ]; then
+            echo "Using distribution key from DIST_CERT_KEY env var (reusing existing cert)."
+            echo "$DIST_CERT_KEY" | base64 --decode > "$CERT_KEY"
+          else
+            echo "DIST_CERT_KEY not set — generating a new key (bootstrap; needs a free cert slot)."
+            openssl genrsa -out "$CERT_KEY" 2048
+          fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key @file:"$CERT_KEY" \
             --create
           keychain add-certificates
+          # Show the key's fingerprint so you can confirm the same key is reused across builds.
+          echo "dist key sha256: $(openssl rsa -in "$CERT_KEY" -pubout 2>/dev/null | openssl dgst -sha256 | awk '{print $2}')"
           # Now that a usable distribution cert + App Store profile actually exist (they didn't in
           # the earlier attempts — the cert step was failing), let Codemagic wire them into the
           # Xcode project. It reads the profile from wherever fetch-signing-files installed it.
