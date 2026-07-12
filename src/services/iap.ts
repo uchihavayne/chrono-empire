@@ -11,8 +11,8 @@
 import { Capacitor } from '@capacitor/core';
 
 export const IAP_CONFIG = {
-  revenueCatApiKeyIos: '',      // 'appl_...'
-  revenueCatApiKeyAndroid: '',  // 'goog_...'
+  revenueCatApiKeyIos: 'appl_miuRdUZHnBmUgKTOfRQfoOPcWzq',  // RevenueCat iOS public SDK key
+  revenueCatApiKeyAndroid: '',  // 'goog_...' (fill when you set up Android)
 };
 
 export const ENTITLEMENT_REMOVE_ADS = 'remove_ads';
