@@ -48,11 +48,19 @@ workflows:
           # Fail loudly (set -e) so a broken signing step can't go green and blow up later.
           set -e
           keychain initialize
+          # Apple caps DISTRIBUTION certificates at 3 per account. Each ephemeral build makes a new
+          # key, so we hit the cap and Apple 409s ("You already have a current Distribution
+          # certificate"). None of the existing certs have their private key on THIS machine (they
+          # were made on earlier throwaway build machines), so they're useless to us — revoke them
+          # to free a slot, then create a fresh cert whose key we control this run.
+          CERT_IDS=$(app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null | jq -r '.[].id' || true)
+          for CID in $CERT_IDS; do
+            echo "Revoking orphaned distribution certificate $CID"
+            app-store-connect certificates delete "$CID" --yes || \
+              app-store-connect certificates delete "$CID" || true
+          done
           # fetch-signing-files needs a certificate PRIVATE KEY to create a distribution cert — it
           # won't generate one itself ("Cannot create resource without certificate private key").
-          # So generate a fresh RSA key; fetch-signing-files uses it to have Apple issue a brand-new
-          # distribution certificate (key lives on THIS machine, so it installs into the keychain
-          # cleanly — no dependency on an old cert whose private key is gone).
           CERT_KEY=/tmp/dist_cert_key.pem
           openssl genrsa -out "$CERT_KEY" 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
