@@ -43,45 +43,27 @@ workflows:
           npx cap sync ios
       - name: Generate app icon & splash
         script: npx @capacitor/assets generate --ios || true
-      - name: Create export options
+      - name: Set up App Store (distribution) code signing
         script: |
-          printf '%s\n' \
-            '<?xml version="1.0" encoding="UTF-8"?>' \
-            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
-            '<plist version="1.0"><dict>' \
-            '<key>method</key><string>app-store</string>' \
-            '<key>teamID</key><string>63VUWUSJ8H</string>' \
-            '<key>signingStyle</key><string>automatic</string>' \
-            '<key>destination</key><string>export</string>' \
-            '</dict></plist>' > /tmp/export.plist
-      - name: Archive (Xcode-managed automatic signing via the API key)
+          # Use Codemagic's own signing tools instead of letting Xcode auto-sign. Xcode's
+          # -allowProvisioningUpdates was fetching a DEVELOPMENT cert/profile (wrong type for an
+          # App Store archive) and tripping over a stale Development cert whose key wasn't in the
+          # keychain. These commands fetch/create an APP-STORE (distribution) cert + profile only,
+          # from the App Store Connect integration, and wire them into the project. No dev cert.
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Archive & export the .ipa
         script: |
-          # Codemagic already placed the .p8 on disk; $APP_STORE_CONNECT_PRIVATE_KEY holds an
-          # "@file:<path>" reference to it. Strip the prefix to get the real path.
-          KEY_PATH="${APP_STORE_CONNECT_PRIVATE_KEY#@file:}"
-          xcodebuild -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" \
-            -configuration Release -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
-            archive
-      - name: Export the .ipa
-        script: |
-          # Same cloud signing the (successful) Archive step used — needs an Admin-role API key
-          # so export can access the cloud-managed distribution certificate.
-          KEY_PATH="${APP_STORE_CONNECT_PRIVATE_KEY#@file:}"
-          xcodebuild -exportArchive \
-            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
-            -exportPath "$CM_BUILD_DIR/build/ipa" \
-            -exportOptionsPlist /tmp/export.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+          # build-ipa archives + exports in one go, using the distribution profile installed above.
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
-      - build/ipa/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
