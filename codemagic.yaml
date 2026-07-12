@@ -60,51 +60,18 @@ workflows:
             --certificate-key @file:"$CERT_KEY" \
             --create
           keychain add-certificates
+          # Now that a usable distribution cert + App Store profile actually exist (they didn't in
+          # the earlier attempts — the cert step was failing), let Codemagic wire them into the
+          # Xcode project. It reads the profile from wherever fetch-signing-files installed it.
+          xcode-project use-profiles
       - name: Archive & export the .ipa
         script: |
-          set -e
-          # `xcode-project use-profiles` kept setting Manual signing WITHOUT actually assigning a
-          # profile to the App target ("App requires a provisioning profile"). So don't rely on its
-          # silent auto-matching — read the profile fetch-signing-files just installed and pass its
-          # name to xcodebuild EXPLICITLY.
-          PROFILE_NAME=""
-          for p in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision; do
-            [ -e "$p" ] || continue
-            security cms -D -i "$p" > /tmp/prof.plist 2>/dev/null || continue
-            APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/prof.plist 2>/dev/null || echo "")
-            case "$APPID" in
-              *".$BUNDLE_ID")
-                PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/prof.plist)
-                echo "Matched profile for $BUNDLE_ID -> '$PROFILE_NAME'  ($p)"
-                break;;
-            esac
-          done
-          # Fail loudly here (not deep in the archive) if no profile was installed for our bundle id.
-          test -n "$PROFILE_NAME"
-          ARCHIVE="$CM_BUILD_DIR/build/App.xcarchive"
-          xcodebuild -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" \
-            -configuration Release -archivePath "$ARCHIVE" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            archive
-          printf '%s\n' \
-            '<?xml version="1.0" encoding="UTF-8"?>' \
-            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
-            '<plist version="1.0"><dict>' \
-            '<key>method</key><string>app-store</string>' \
-            "<key>teamID</key><string>$TEAM_ID</string>" \
-            '<key>signingStyle</key><string>manual</string>' \
-            '<key>provisioningProfiles</key><dict>' \
-            "<key>$BUNDLE_ID</key><string>$PROFILE_NAME</string>" \
-            '</dict></dict></plist>' > /tmp/export.plist
-          xcodebuild -exportArchive -archivePath "$ARCHIVE" \
-            -exportPath "$CM_BUILD_DIR/build/ipa" \
-            -exportOptionsPlist /tmp/export.plist
-          ls -la "$CM_BUILD_DIR/build/ipa"
+          # build-ipa archives + exports the App Store .ipa using the profile installed above.
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
-      - build/ipa/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
