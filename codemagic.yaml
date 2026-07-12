@@ -58,8 +58,7 @@ workflows:
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --certificate-key @file:"$CERT_KEY" \
-            --create \
-            --verbose-logging
+            --create
           keychain add-certificates
       - name: Archive & export the .ipa
         script: |
