@@ -45,20 +45,19 @@ workflows:
         script: npx @capacitor/assets generate --ios || true
       - name: Set up App Store (distribution) code signing
         script: |
-          # Fail loudly (set -e) so a broken signing step can't go green and blow up later in the
-          # archive. Use Codemagic's signing CLI to get an APP-STORE (distribution) cert + profile.
+          # Fail loudly (set -e) so a broken signing step can't go green and blow up later.
           set -e
           keychain initialize
-          # Make a FRESH distribution certificate whose private key lives on THIS build machine.
-          # Earlier builds left a cert whose key wasn't in the keychain, so fetch-signing-files
-          # couldn't bind a profile to a usable cert (which is why the profile never got assigned).
-          # '|| true' in case the account is already at its distribution-cert limit / one exists.
-          app-store-connect certificates create --type IOS_DISTRIBUTION --save || true
-          keychain add-certificates
-          # Create/fetch the App Store provisioning profile for our bundle id, bound to that cert.
-          # --verbose-logging prints exactly which cert + profile it picks, so any mismatch is visible.
+          # fetch-signing-files needs a certificate PRIVATE KEY to create a distribution cert — it
+          # won't generate one itself ("Cannot create resource without certificate private key").
+          # So generate a fresh RSA key; fetch-signing-files uses it to have Apple issue a brand-new
+          # distribution certificate (key lives on THIS machine, so it installs into the keychain
+          # cleanly — no dependency on an old cert whose private key is gone).
+          CERT_KEY=/tmp/dist_cert_key.pem
+          openssl genrsa -out "$CERT_KEY" 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key @file:"$CERT_KEY" \
             --create \
             --verbose-logging
           keychain add-certificates
