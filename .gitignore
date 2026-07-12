@@ -4,9 +4,19 @@ node_modules/
 # build output
 dist/
 
-# native platforms (regenerated in CI by `cap add` + `cap sync`)
-ios/
+# native platforms — ios/ IS committed now (pre-configured Info.plist with the AdMob app id,
+# which CI plist-editing kept breaking). CI runs `cap sync` + `pod install` on top of it.
+# android/ is still regenerated in CI.
 android/
+# ...but not the parts CI regenerates / installs:
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/build/
+ios/DerivedData/
+ios/App/output/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
 
 # generated resources fan-out (source icon.png/splash.png ARE committed)
 resources/ios/
