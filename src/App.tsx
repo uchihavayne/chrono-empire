@@ -18,6 +18,7 @@ import { audio } from './services/audio';
 import { EraBackdrop } from './components/EraBackdrop';
 import { Showcase } from './components/Showcase';
 import { SpotlightTutorial } from './components/SpotlightTutorial';
+import { IntroScreen } from './components/IntroScreen';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -39,6 +40,7 @@ export default function App() {
     return <Showcase />;
   }
   const t = useMemo(() => makeT(s.lang), [s.lang]);
+  const [intro, setIntro] = useState(true);
   const [tab, setTab] = useState<Tab>('empire');
   // the era the player is currently VIEWING (drives backdrop + accent theme). Income
   // still uses the highest unlocked era; only the visuals follow what you browse.
@@ -66,6 +68,8 @@ export default function App() {
   useEffect(() => {
     const unlock = () => {
       audio.musicEnabled = engine.state.musicOn;
+      audio.setMusicVolume(engine.state.musicVol ?? 1);
+      audio.setSfxVolume(engine.state.sfxVol ?? 1);
       audio.unlock(engine.currentEraId());
       window.removeEventListener('pointerdown', unlock);
     };
@@ -355,7 +359,9 @@ export default function App() {
             </Modal>
           )}
 
-          {!s.tutorialDone && tab === 'empire' && <SpotlightTutorial />}
+          {!s.tutorialDone && tab === 'empire' && !intro && <SpotlightTutorial />}
+
+          {intro && <IntroScreen onDone={() => setIntro(false)} />}
 
           {toast && <div className="toast" key={toast.key}>{toast.msg}</div>}
         </div>

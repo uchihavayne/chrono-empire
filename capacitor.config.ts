@@ -5,7 +5,10 @@ const config: CapacitorConfig = {
   appName: 'Chrono Empire',
   webDir: 'dist',
   ios: {
-    contentInset: 'automatic',
+    // 'never' = the web view fills the whole screen edge-to-edge; we handle the notch/home-indicator
+    // ourselves in CSS via env(safe-area-inset-*). 'automatic' double-counted the bottom inset and
+    // left a big black gap under the tab bar.
+    contentInset: 'never',
     backgroundColor: '#0b0e1a',
   },
   android: {

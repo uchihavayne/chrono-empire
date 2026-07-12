@@ -250,14 +250,32 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
       </select>
       <div className="row-card" style={{ marginTop: 4 }}>
         <div className="icon-tile">🎵</div>
-        <div className="info"><div className="title">{t('music')}</div></div>
+        <div className="info">
+          <div className="title">{t('music')}</div>
+          <input
+            className="vol-slider" type="range" min={0} max={100} step={1}
+            value={Math.round((s.musicVol ?? 1) * 100)}
+            disabled={!s.musicOn}
+            onChange={(e) => engine.setMusicVol(Number(e.target.value) / 100)}
+            aria-label={t('music')}
+          />
+        </div>
         <button className={`action-btn${s.musicOn ? '' : ' purple'}`} onClick={() => engine.setMusic(!s.musicOn)}>
           {s.musicOn ? t('on') : t('off')}
         </button>
       </div>
       <div className="row-card" style={{ marginTop: 6 }}>
         <div className="icon-tile">🔔</div>
-        <div className="info"><div className="title">{t('sfx')}</div></div>
+        <div className="info">
+          <div className="title">{t('sfx')}</div>
+          <input
+            className="vol-slider" type="range" min={0} max={100} step={1}
+            value={Math.round((s.sfxVol ?? 1) * 100)}
+            disabled={!s.sfxOn}
+            onChange={(e) => engine.setSfxVol(Number(e.target.value) / 100)}
+            aria-label={t('sfx')}
+          />
+        </div>
         <button className={`action-btn${s.sfxOn ? '' : ' purple'}`} onClick={() => engine.setSfx(!s.sfxOn)}>
           {s.sfxOn ? t('on') : t('off')}
         </button>

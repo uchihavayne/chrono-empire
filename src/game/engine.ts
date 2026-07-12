@@ -74,6 +74,8 @@ export interface GameState {
   soundOn: boolean;    // legacy master (kept for migration); use musicOn/sfxOn now
   musicOn: boolean;
   sfxOn: boolean;
+  musicVol: number;    // 0..1 music volume
+  sfxVol: number;      // 0..1 SFX volume
   notation: 'suffix' | 'scientific';
   createdAt: number;
   /** stable random code identifying this player's cloud backup slot */
@@ -119,7 +121,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 7;
+const VERSION = 8;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -157,6 +159,11 @@ function migrate(save: any): any {
     if (typeof save.musicOn !== 'boolean') save.musicOn = on;
     if (typeof save.sfxOn !== 'boolean') save.sfxOn = on;
   }
+  // v7→v8: per-channel volume sliders (default full).
+  if (v < 8) {
+    if (typeof save.musicVol !== 'number') save.musicVol = 1;
+    if (typeof save.sfxVol !== 'number') save.sfxVol = 1;
+  }
   save.version = VERSION;
   return save;
 }
@@ -179,7 +186,7 @@ function detectLang(): string {
 function defaultState(): GameState {
   return {
     version: VERSION,
-    cash: 0,
+    cash: 25,   // tiny head start so the tutorial's first purchase is affordable immediately
     lifetimeCash: 0,
     runCash: 0,
     crystals: 0,
@@ -209,6 +216,8 @@ function defaultState(): GameState {
     soundOn: true,
     musicOn: true,
     sfxOn: true,
+    musicVol: 1,
+    sfxVol: 1,
     notation: 'suffix',
     createdAt: Date.now(),
     cloudCode: makeCloudCode(),
@@ -1275,6 +1284,22 @@ export class GameEngine {
 
   setSfx(on: boolean): void {
     this.state.sfxOn = on;
+    this.save();
+    this.emit();
+  }
+
+  setMusicVol(v: number): void {
+    this.state.musicVol = Math.max(0, Math.min(1, v));
+    audio.setMusicVolume(this.state.musicVol);
+    this.save();
+    this.emit();
+  }
+
+  setSfxVol(v: number): void {
+    this.state.sfxVol = Math.max(0, Math.min(1, v));
+    audio.setSfxVolume(this.state.sfxVol);
+    // little audible confirmation so the slider gives feedback while dragging
+    if (this.state.sfxOn) audio.sfxTap();
     this.save();
     this.emit();
   }

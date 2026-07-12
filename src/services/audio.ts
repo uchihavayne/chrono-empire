@@ -60,6 +60,9 @@ class AudioEngine {
   private step = 0;
   private started = false;
   musicEnabled = true;
+  // 0..1 user volume multipliers (persisted in game state). 1 = the original baseline levels.
+  private musicVol = 1;
+  private sfxVol = 1;
 
   private ensure(): boolean {
     if (this.ctx) return true;
@@ -74,7 +77,7 @@ class AudioEngine {
       this.musicGain.gain.value = 0.32;
       this.musicGain.connect(this.master);
       this.sfxGain = this.ctx.createGain();
-      this.sfxGain.gain.value = 0.5;
+      this.sfxGain.gain.value = 0.5 * this.sfxVol;
       this.sfxGain.connect(this.master);
       return true;
     } catch {
@@ -89,8 +92,8 @@ class AudioEngine {
     if (!this.bg) {
       this.bg = new Audio('/bg-music.mp3');
       this.bg.loop = true;
-      this.bg.volume = 0.35;
     }
+    this.bg.volume = 0.5 * this.musicVol;
     this.bg.play().catch(() => { /* autoplay blocked until a gesture — retried on next unlock */ });
   }
   private stopBg(): void {
@@ -122,6 +125,18 @@ class AudioEngine {
 
   private stopMusic(): void {
     if (this.stepTimer !== null) { clearInterval(this.stepTimer); this.stepTimer = null; }
+  }
+
+  /** music volume 0..1 — affects the looping soundtrack live. */
+  setMusicVolume(v: number): void {
+    this.musicVol = Math.max(0, Math.min(1, v));
+    if (this.bg) this.bg.volume = 0.5 * this.musicVol;
+  }
+
+  /** SFX volume 0..1 — affects all sound effects live via the SFX bus gain. */
+  setSfxVolume(v: number): void {
+    this.sfxVol = Math.max(0, Math.min(1, v));
+    if (this.sfxGain) this.sfxGain.gain.value = 0.5 * this.sfxVol;
   }
 
   /** era changed — the single soundtrack keeps playing; just track the current era. */
