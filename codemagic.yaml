@@ -48,16 +48,25 @@ workflows:
           # Fail loudly (set -e) so a broken signing step can't go green and blow up later.
           set -e
           keychain initialize
-          # Apple caps DISTRIBUTION certificates at 3 per account. Each ephemeral build makes a new
-          # key, so we hit the cap and Apple 409s ("You already have a current Distribution
-          # certificate"). None of the existing certs have their private key on THIS machine (they
-          # were made on earlier throwaway build machines), so they're useless to us — revoke them
-          # to free a slot, then create a fresh cert whose key we control this run.
-          CERT_IDS=$(app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null | jq -r '.[].id' || true)
+          # Apple caps DISTRIBUTION certificates per account, and each ephemeral build makes a new
+          # private key, so we hit the cap and Apple 409s ("You already have a current Distribution
+          # certificate"). The existing certs have no usable private key on THIS machine, so revoke
+          # ALL distribution certs to free a slot, then create a fresh one whose key we control.
+          # (List EVERYTHING and filter in python so we don't depend on a specific --type flag or
+          # JSON shape; dump the raw list to the log so any format surprise is visible.)
+          app-store-connect certificates list --json > /tmp/certs.json 2>/tmp/certs.err || {
+            echo "certificates list failed:"; cat /tmp/certs.err; echo "[]" > /tmp/certs.json;
+          }
+          echo "=== raw certificate list ==="; cat /tmp/certs.json; echo
+          # Tolerate either a bare array or a {data:[...]} wrapper, and certificateType at either
+          # .attributes.certificateType or top level. jq is preinstalled on the Codemagic mac.
+          CERT_IDS=$(jq -r '(.data // .)[]? | select(((.attributes.certificateType // .certificateType) // "" | ascii_upcase) | test("DISTRIBUTION")) | .id' /tmp/certs.json 2>/dev/null || true)
+          echo "Distribution certs to revoke: ${CERT_IDS:-<none>}"
           for CID in $CERT_IDS; do
-            echo "Revoking orphaned distribution certificate $CID"
-            app-store-connect certificates delete "$CID" --yes || \
-              app-store-connect certificates delete "$CID" || true
+            echo "Revoking distribution certificate $CID"
+            app-store-connect certificates delete "$CID" --yes \
+              || printf 'y\n' | app-store-connect certificates delete "$CID" \
+              || true
           done
           # fetch-signing-files needs a certificate PRIVATE KEY to create a distribution cert — it
           # won't generate one itself ("Cannot create resource without certificate private key").
