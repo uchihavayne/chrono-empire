@@ -17,7 +17,8 @@ const browser = await puppeteer.launch({
 });
 
 const page = await browser.newPage();
-await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+// 430x932 @3x = 1290x2796 → a valid App Store 6.7"/6.9" screenshot size (IAP review screenshot).
+await page.setViewport({ width: 430, height: 932, deviceScaleFactor: 3 });
 await page.goto('http://localhost:5199', { waitUntil: 'networkidle0' });
 await page.evaluateHandle('document.fonts.ready');
 
