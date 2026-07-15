@@ -14,6 +14,10 @@ import {
   type GeneratorDef, type QuestDef,
 } from './data';
 import { audio } from '../services/audio';
+import {
+  EXP_CLEAR_BONUS, EXP_FREE_PER_DAY, EXP_MAX_PER_DAY, EXP_STAGES, EXP_UNLOCK_ERAS,
+  RELIC_BY_ID, relicCost, shardsForStage,
+} from './expedition';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
@@ -105,6 +109,16 @@ export interface GameState {
   /** boxes opened today (free + ad) and the date, for the daily limit */
   boxesToday: number;
   lastBoxDate: string;
+  // ─── Temporal Expeditions (active roguelite mode) ───
+  /** Relic Shards — meta-currency earned in expeditions, spent on permanent relics */
+  shards: number;
+  /** permanent relic levels (survive rebirth AND ascension) */
+  relics: Record<string, number>;
+  /** expedition runs started today + the date, for the daily limit */
+  expToday: number;
+  expDate: string;
+  /** deepest stage ever cleared (bragging + future unlocks) */
+  expBestDepth: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -121,7 +135,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 8;
+const VERSION = 9;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -163,6 +177,14 @@ function migrate(save: any): any {
   if (v < 8) {
     if (typeof save.musicVol !== 'number') save.musicVol = 1;
     if (typeof save.sfxVol !== 'number') save.sfxVol = 1;
+  }
+  // v8→v9: Temporal Expeditions (shards + relics + daily-run bookkeeping).
+  if (v < 9) {
+    if (typeof save.shards !== 'number') save.shards = 0;
+    if (!save.relics || typeof save.relics !== 'object') save.relics = {};
+    if (typeof save.expToday !== 'number') save.expToday = 0;
+    if (typeof save.expDate !== 'string') save.expDate = '';
+    if (typeof save.expBestDepth !== 'number') save.expBestDepth = 0;
   }
   save.version = VERSION;
   return save;
@@ -234,6 +256,11 @@ function defaultState(): GameState {
     cards: {},
     boxesToday: 0,
     lastBoxDate: '',
+    shards: 0,
+    relics: {},
+    expToday: 0,
+    expDate: '',
+    expBestDepth: 0,
   };
 }
 
@@ -614,6 +641,7 @@ export class GameEngine {
   globalMult(): number {
     let m = ERAS[this.eraIndex()].mult * this.prestigeMult() * this.achievementMult() * this.rankMult();
     m *= this.investorPerk('global');
+    m *= 1 + this.relicLevel('relic_income') * RELIC_BY_ID['relic_income'].value; // expedition relic
     if (this.state.starterPack) m *= 2; // permanent IAP boost
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
     const season = seasonalEvent();
@@ -644,7 +672,8 @@ export class GameEngine {
   }
 
   cycleSpeedMult(): number {
-    return 1 + this.skillLevel('fast_cycles') * 0.1 + this.investorSpeedAdd();
+    return 1 + this.skillLevel('fast_cycles') * 0.1 + this.investorSpeedAdd()
+      + this.relicLevel('relic_speed') * RELIC_BY_ID['relic_speed'].value;
   }
 
   /** effective seconds per cycle for a venture, after global speed + owned-count milestones */
@@ -654,7 +683,8 @@ export class GameEngine {
   }
 
   costDiscount(): number {
-    return Math.max(0.1, 1 - this.skillLevel('cheap_deals') * 0.03 - this.investorCostCut());
+    return Math.max(0.1, 1 - this.skillLevel('cheap_deals') * 0.03 - this.investorCostCut()
+      - this.relicLevel('relic_cost') * RELIC_BY_ID['relic_cost'].value);
   }
 
   /** revenue for one full cycle of a generator (all units) */
@@ -681,7 +711,8 @@ export class GameEngine {
   }
 
   offlineCapHours(): number {
-    return OFFLINE_CAP_BASE_HOURS + this.skillLevel('offline_cap') * 4;
+    return OFFLINE_CAP_BASE_HOURS + this.skillLevel('offline_cap') * 4
+      + this.relicLevel('relic_offline') * RELIC_BY_ID['relic_offline'].value;
   }
 
   adBoostHours(): number {
@@ -1302,6 +1333,82 @@ export class GameEngine {
     if (this.state.sfxOn) audio.sfxTap();
     this.save();
     this.emit();
+  }
+
+  // ─── Temporal Expeditions (active roguelite mode) ───
+
+  /** transient UI flag — true while the expedition overlay is mounted (never saved) */
+  expeditionOpen = false;
+
+  expeditionUnlocked(): boolean {
+    return this.state.erasUnlocked >= EXP_UNLOCK_ERAS || this.state.rebirths >= 1;
+  }
+
+  private refreshExpDay(): void {
+    const today = this.todayStr();
+    if (this.state.expDate !== today) { this.state.expDate = today; this.state.expToday = 0; }
+  }
+  expeditionsLeftToday(): number { this.refreshExpDay(); return Math.max(0, EXP_MAX_PER_DAY - this.state.expToday); }
+  /** past the free runs (but under the cap) the extra run requires a rewarded ad */
+  expeditionNeedsAd(): boolean {
+    this.refreshExpDay();
+    return this.state.expToday >= EXP_FREE_PER_DAY && this.state.expToday < EXP_MAX_PER_DAY;
+  }
+
+  /** consume a daily slot and open the run overlay */
+  startExpedition(): boolean {
+    this.refreshExpDay();
+    if (!this.expeditionUnlocked() || this.state.expToday >= EXP_MAX_PER_DAY) return false;
+    this.state.expToday++;
+    this.expeditionOpen = true;
+    if (this.state.sfxOn) audio.sfxAnomaly();
+    this.save();
+    this.emit();
+    return true;
+  }
+
+  /** bank the run's shards. depth = deepest stage CLEARED (0..EXP_STAGES). */
+  finishExpedition(depth: number, shardMult = 1): number {
+    let shards = 0;
+    for (let d = 1; d <= Math.min(depth, EXP_STAGES); d++) shards += shardsForStage(d);
+    if (depth >= EXP_STAGES) shards = Math.round(shards * EXP_CLEAR_BONUS);
+    shards = Math.round(shards * shardMult);
+    this.state.shards += shards;
+    this.state.expBestDepth = Math.max(this.state.expBestDepth, depth);
+    if (shards > 0 && this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return shards;
+  }
+
+  /** unmount the expedition overlay (called from its result screen) */
+  closeExpedition(): void {
+    this.expeditionOpen = false;
+    this.emit();
+  }
+
+  relicLevel(id: string): number {
+    return this.state.relics?.[id] ?? 0;
+  }
+
+  buyRelic(id: string): boolean {
+    const def = RELIC_BY_ID[id];
+    if (!def) return false;
+    const lvl = this.relicLevel(id);
+    if (lvl >= def.maxLevel) return false;
+    const cost = relicCost(def, lvl);
+    if (this.state.shards < cost) return false;
+    this.state.shards -= cost;
+    this.state.relics[id] = lvl + 1;
+    if (this.state.sfxOn) audio.sfxManager();
+    this.save();
+    this.emit();
+    return true;
+  }
+
+  /** relic_power makes stages a bit easier: extra stage time as a fraction */
+  expeditionTimeBonus(): number {
+    return this.relicLevel('relic_power') * RELIC_BY_ID['relic_power'].value;
   }
 }
 

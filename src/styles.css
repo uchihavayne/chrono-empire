@@ -986,3 +986,133 @@ select, .text-input {
 
 [dir='rtl'] .gen-mid, [dir='rtl'] .row-card .info { text-align: right; }
 [dir='rtl'] .unlock-kicker, [dir='rtl'] .unlock-name { text-align: end; }
+
+/* ─── Temporal Expeditions (active roguelite mode) ─── */
+.exp-hero {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(64, 200, 255, 0.28), transparent 65%),
+    linear-gradient(160deg, #12253c, #0b1226) !important;
+  border: 1px solid rgba(90, 200, 255, 0.35) !important;
+}
+.exp-hero.exp-locked { opacity: 0.75; }
+.exp-btn {
+  background: linear-gradient(180deg, #6fd9ff, #1d90c8) !important;
+  box-shadow: 0 5px 0 #0e6491, 0 8px 22px rgba(60, 190, 255, 0.4) !important;
+  color: #04222e !important;
+}
+
+.exp-overlay {
+  position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(70, 130, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, #101733 0%, #070a18 70%);
+  animation: fadeIn 0.3s;
+  max-width: 480px; margin: 0 auto; left: 0; right: 0;
+}
+.exp-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 10px;
+  font-weight: 800; font-size: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.exp-depth { color: #8fd8ff; }
+.exp-hearts { letter-spacing: 1px; font-size: 13px; }
+.exp-shards { margin-left: auto; color: #ffc63c; }
+.exp-quit {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.07); color: var(--text-dim); font-size: 15px; cursor: pointer;
+  font-family: inherit;
+}
+.exp-center {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; gap: 6px;
+}
+.exp-big-icon { font-size: 64px; filter: drop-shadow(0 6px 22px rgba(90,180,255,0.5)); }
+.exp-title { font-size: 24px; font-weight: 800; }
+.exp-desc { color: var(--text-dim); font-size: 14.5px; line-height: 1.55; max-width: 320px; font-weight: 600; }
+.exp-sub { color: #8fd8ff; font-weight: 800; font-size: 14px; }
+.exp-flavor {
+  font-size: 13px; font-weight: 800; color: #ffd66a; opacity: 0.9;
+  background: rgba(255,214,106,0.1); border: 1px solid rgba(255,214,106,0.3);
+  padding: 5px 12px; border-radius: 20px; margin-bottom: 8px;
+}
+.exp-giveup {
+  margin-top: 10px; background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700; text-decoration: underline; opacity: 0.75;
+}
+
+/* play arena */
+.exp-arena { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 14px 18px; position: relative; }
+.exp-timerbar {
+  width: 100%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden;
+}
+.exp-timerbar span {
+  display: block; height: 100%; border-radius: 4px; transition: width 0.1s linear;
+  background: linear-gradient(90deg, #ff5c74, #ffc63c 45%, #45e08a);
+}
+.exp-goal { margin-top: 14px; font-weight: 700; color: var(--text-dim); font-size: 13.5px; text-align: center; }
+.exp-count { font-size: 38px; font-weight: 800; color: #8fd8ff; margin: 4px 0 10px; }
+
+.exp-tap-btn {
+  width: 170px; height: 170px; border-radius: 50%; border: none; cursor: pointer; margin-top: auto; margin-bottom: auto;
+  font-size: 64px; font-family: inherit;
+  background: radial-gradient(circle at 35% 30%, #7fe0ff, #1d90c8 70%);
+  box-shadow: 0 8px 0 #0e6491, 0 14px 40px rgba(60,190,255,0.45), inset 0 2px 8px rgba(255,255,255,0.4);
+  animation: expPulse 1.1s ease-in-out infinite;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.exp-tap-btn:active { transform: scale(0.93); box-shadow: 0 3px 0 #0e6491, 0 8px 20px rgba(60,190,255,0.35); }
+@keyframes expPulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.15); } }
+
+.exp-zone-wrap { width: 100%; margin: auto 0; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+.exp-zone-bar {
+  position: relative; width: 100%; height: 30px; border-radius: 15px;
+  background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); overflow: hidden;
+}
+.exp-zone-gold {
+  position: absolute; top: 0; bottom: 0; border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,214,106,0.85), rgba(224,144,42,0.85));
+  box-shadow: 0 0 14px rgba(255,214,106,0.7);
+}
+.exp-zone-marker {
+  position: absolute; top: -4px; bottom: -4px; width: 7px; border-radius: 4px; margin-left: -3px;
+  background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.9);
+  transition: background 0.15s;
+}
+.exp-zone-marker.hit { background: #45e08a; box-shadow: 0 0 16px #45e08a; }
+.exp-zone-marker.miss { background: #ff5c74; box-shadow: 0 0 16px #ff5c74; }
+.exp-tap-btn.zone { width: 140px; height: 140px; font-size: 52px; }
+
+.exp-hunt-field { position: relative; flex: 1; width: 100%; }
+.exp-bubble {
+  position: absolute; width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer;
+  font-size: 40px; font-family: inherit; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, rgba(140,220,255,0.95), rgba(40,120,200,0.9) 75%);
+  box-shadow: 0 4px 18px rgba(80,180,255,0.5), inset 0 2px 6px rgba(255,255,255,0.5);
+  animation: expBubble linear forwards;
+  touch-action: manipulation;
+}
+@keyframes expBubble {
+  0% { transform: scale(0.3); opacity: 0; }
+  12% { transform: scale(1.05); opacity: 1; }
+  20% { transform: scale(1); }
+  85% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(0.2); opacity: 0; }
+}
+
+/* draft cards */
+.exp-draft-row { display: flex; gap: 10px; width: 100%; margin-top: 12px; }
+.exp-draft-card {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+  background: linear-gradient(160deg, #24304e, #131a30); border: 1.5px solid rgba(120,180,255,0.4);
+  border-radius: 16px; padding: 16px 8px 12px; font-family: inherit; color: var(--text);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  transition: transform 0.15s, border-color 0.15s;
+  animation: revealPop 0.4s ease both;
+}
+.exp-draft-card:nth-child(2) { animation-delay: 0.08s; }
+.exp-draft-card:nth-child(3) { animation-delay: 0.16s; }
+.exp-draft-card:active { transform: scale(0.95); border-color: #8fd8ff; }
+.exp-draft-icon { font-size: 38px; }
+.exp-draft-name { font-weight: 800; font-size: 13px; }
+.exp-draft-desc { font-size: 11px; color: var(--text-dim); font-weight: 600; line-height: 1.35; }

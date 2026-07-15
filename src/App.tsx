@@ -19,6 +19,7 @@ import { EraBackdrop } from './components/EraBackdrop';
 import { Showcase } from './components/Showcase';
 import { SpotlightTutorial } from './components/SpotlightTutorial';
 import { IntroScreen } from './components/IntroScreen';
+import { ExpeditionMode } from './components/ExpeditionMode';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -360,6 +361,9 @@ export default function App() {
           )}
 
           {!s.tutorialDone && tab === 'empire' && !intro && <SpotlightTutorial />}
+
+          {/* Temporal Expedition run (fullscreen, above everything but the intro) */}
+          {engine.expeditionOpen && <ExpeditionMode />}
 
           {intro && <IntroScreen onDone={() => setIntro(false)} />}
 

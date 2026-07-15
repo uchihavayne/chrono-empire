@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ASCEND_MIN_REBIRTHS, ERA_IDS, INVESTORS, SKILLS, skillCost, type InvestorPerk } from '../game/data';
+import { EXP_UNLOCK_ERAS, RELICS, relicCost } from '../game/expedition';
 import { formatNumber } from '../game/format';
-import { useGame, useT, type TFunc } from '../hooks';
+import { useGame, useT, useWatchAd, type TFunc } from '../hooks';
 import { ConfirmModal } from './Modals';
 import { GemIcon, VortexIcon } from './icons';
 
@@ -19,15 +20,82 @@ function perkText(t: TFunc, perk: InvestorPerk): string {
 export function RebirthTab() {
   const engine = useGame();
   const t = useT();
+  const watchAd = useWatchAd();
   const s = engine.state;
   const pending = engine.pendingCrystals();
   const [confirming, setConfirming] = useState(false);
   const [ascending, setAscending] = useState(false);
   const pendingEons = engine.pendingEons();
   const showAscend = s.eons > 0 || s.rebirths >= 1;
+  const expUnlocked = engine.expeditionUnlocked();
+  const expLeft = engine.expeditionsLeftToday();
 
   return (
     <div>
+      {/* Temporal Expeditions — the active roguelite mode (unlocks before first rebirth) */}
+      <div className={`rebirth-hero exp-hero${expUnlocked ? '' : ' exp-locked'}`}>
+        <div className="vortex-wrap"><span style={{ fontSize: 44 }}>🌀</span></div>
+        <h2>⏳ {t('exp_title')}</h2>
+        <p>{t('exp_desc')}</p>
+        {!expUnlocked ? (
+          <div className="gain" style={{ opacity: 0.85 }}>{t('exp_locked', { n: EXP_UNLOCK_ERAS })}</div>
+        ) : (
+          <>
+            <div className="gain">
+              🔶 {t('exp_shards')}: <b>{formatNumber(s.shards, s.notation)}</b>
+              {s.expBestDepth > 0 && <span style={{ opacity: 0.7 }}> · {t('exp_best', { n: s.expBestDepth })}</span>}
+            </div>
+            {expLeft > 0 ? (
+              <button
+                className="rebirth-btn exp-btn"
+                onClick={() => {
+                  if (engine.expeditionNeedsAd()) watchAd(() => engine.startExpedition());
+                  else engine.startExpedition();
+                }}
+              >
+                {engine.expeditionNeedsAd() ? `📺 ${t('exp_start')}` : t('exp_start')}
+              </button>
+            ) : (
+              <div className="gain" style={{ opacity: 0.85 }}>{t('exp_no_runs')}</div>
+            )}
+            <p style={{ marginTop: 10, opacity: 0.75, fontSize: 12.5 }}>{t('exp_runs_left', { n: expLeft })}</p>
+          </>
+        )}
+      </div>
+
+      {/* permanent relics bought with shards */}
+      {expUnlocked && (
+        <>
+          <div className="section-title">🔶 {t('exp_relics_title')}</div>
+          <p className="hint">{t('exp_relics_hint')}</p>
+          {RELICS.map((r) => {
+            const lvl = engine.relicLevel(r.id);
+            const maxed = lvl >= r.maxLevel;
+            const cost = relicCost(r, lvl);
+            return (
+              <div className={`row-card${maxed ? ' done' : ''}`} key={r.id}>
+                <div className="icon-tile">{r.icon}</div>
+                <div className="info">
+                  <div className="title">{t(`${r.id}_n`)} · {t('level', { n: lvl })}</div>
+                  <div className="desc">{t(`${r.id}_d`)}</div>
+                </div>
+                {maxed ? (
+                  <span className="check">{t('max_lvl')}</span>
+                ) : (
+                  <button
+                    className="action-btn"
+                    disabled={s.shards < cost}
+                    onClick={() => engine.buyRelic(r.id)}
+                  >
+                    🔶 {formatNumber(cost, s.notation)}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
+
       <div className="rebirth-hero">
         <div className="vortex-wrap"><VortexIcon size={64} spin /></div>
         <h2>{t('rebirth_title')}</h2>
