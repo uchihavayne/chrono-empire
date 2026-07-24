@@ -175,8 +175,10 @@ export const en: Dict = {
   ev_stalls: 'Festival Stalls', ev_producing: '🎟️ {n} / sec', ev_stall_locked: 'Buy to start earning tokens',
   ev_footer: 'Tokens keep accruing while you play the main game too. Come back before the timer ends!',
   ev_over_t: 'Festival ended!', ev_over_d: 'Your Event Tokens converted to Gems. A new festival has begun!',
+  ev_frenzy: 'Festival Frenzy — ×3 tokens for 1h', ev_frenzy_on: 'Frenzy active · ×3 tokens · {t}',
   ev_confetti_n: 'Time Confetti Stand', ev_carousel_n: 'Chrono Carousel',
   ev_fireworks_n: 'Paradox Fireworks', ev_ferris_n: 'Eternity Ferris Wheel',
+  ev_bumper_n: 'Quantum Bumper Cars', ev_portal_n: 'Rift Portal Ride',
 };
 
 export const tr: Dict = {
@@ -354,8 +356,10 @@ export const tr: Dict = {
   ev_stalls: 'Festival Tezgahları', ev_producing: '🎟️ {n} / sn', ev_stall_locked: 'Jeton kazanmaya başlamak için satın al',
   ev_footer: 'Ana oyunu oynarken de jetonlar birikmeye devam eder. Süre bitmeden geri gel!',
   ev_over_t: 'Festival bitti!', ev_over_d: 'Etkinlik Jetonların Elmasa dönüştü. Yeni bir festival başladı!',
+  ev_frenzy: 'Festival Çılgınlığı — 1s boyunca ×3 jeton', ev_frenzy_on: 'Çılgınlık aktif · ×3 jeton · {t}',
   ev_confetti_n: 'Zaman Konfeti Tezgahı', ev_carousel_n: 'Chrono Atlıkarınca',
   ev_fireworks_n: 'Paradoks Havai Fişek', ev_ferris_n: 'Sonsuzluk Dönme Dolabı',
+  ev_bumper_n: 'Kuantum Çarpışan Araba', ev_portal_n: 'Yarık Portalı',
 };
 
 export const es: Dict = {

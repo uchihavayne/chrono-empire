@@ -1154,3 +1154,18 @@ select, .text-input {
 .event-stall .event-count { color: var(--acc); font-weight: 800; font-size: 13px; }
 .event-buy { min-width: 108px; }
 .event-buy .buy-cost { color: #ffe08a; }
+
+/* Festival Frenzy (event ad-boost) */
+.event-frenzy {
+  display: block; width: calc(100% - 4px); margin: 2px 2px 10px; padding: 12px;
+  border-radius: 14px; border: none; cursor: pointer; font-family: inherit;
+  font-weight: 800; font-size: 14px; color: #2a1000; text-align: center;
+  background: linear-gradient(180deg, #ffd66a, #ff9d1c);
+  box-shadow: 0 4px 0 #c26a00, 0 8px 20px rgba(255,160,30,0.4);
+}
+.event-frenzy:active { transform: translateY(2px); box-shadow: 0 2px 0 #c26a00; }
+.event-frenzy.active {
+  color: #fff; background: linear-gradient(120deg, #ff7a3c, #ff4d6d);
+  box-shadow: 0 4px 18px rgba(255,80,90,0.45); cursor: default; animation: festivalPulse 1.6s ease-in-out infinite;
+}
+.event-frenzy-tag { color: #ff8a3c; font-weight: 800; }

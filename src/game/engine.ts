@@ -19,8 +19,8 @@ import {
   RELIC_BY_ID, relicCost,
 } from './expedition';
 import {
-  EVENT_GEN_BY_ID, EVENT_GENS, EVENT_OFFLINE_CAP_H, EVENT_START_TOKENS,
-  eventCycleId, eventEndsAt, eventGemsFor, eventGenCost, eventGenRate,
+  EVENT_BOOST_MIN, EVENT_BOOST_MULT, EVENT_GEN_BY_ID, EVENT_GENS, EVENT_OFFLINE_CAP_H,
+  EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
 } from './event';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
@@ -136,6 +136,8 @@ export interface GameState {
   eventLastSeen: number;
   /** gems awaiting a "your event paid out" celebration (set on rollover) */
   eventPayoutGems: number;
+  /** Festival Frenzy (ad-boost): ×3 event tokens until this timestamp */
+  eventBoostUntil: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -212,6 +214,7 @@ function migrate(save: any): any {
     if (typeof save.eventLastSeen !== 'number') save.eventLastSeen = Date.now();
     if (typeof save.eventPayoutGems !== 'number') save.eventPayoutGems = 0;
   }
+  if (typeof save.eventBoostUntil !== 'number') save.eventBoostUntil = 0;
   save.version = VERSION;
   return save;
 }
@@ -293,6 +296,7 @@ function defaultState(): GameState {
     eventGens: {},
     eventLastSeen: Date.now(),
     eventPayoutGems: 0,
+    eventBoostUntil: 0,
   };
 }
 
@@ -1479,23 +1483,39 @@ export class GameEngine {
     this.state.eventLastSeen = Date.now();
   }
 
-  /** total Event Tokens produced per second by owned event businesses */
+  /** total Event Tokens produced per second by owned event businesses (×3 during a Frenzy) */
   eventIncomePerSec(): number {
     let t = 0;
     for (const g of EVENT_GENS) t += eventGenRate(g, this.state.eventGens[g.id] ?? 0);
-    return t;
+    return t * (this.eventBoostActive() ? EVENT_BOOST_MULT : 1);
+  }
+
+  eventBoostActive(): boolean { return Date.now() < (this.state.eventBoostUntil ?? 0); }
+  eventBoostLeftMs(): number { return Math.max(0, (this.state.eventBoostUntil ?? 0) - Date.now()); }
+
+  /** grant a Festival Frenzy (called after a rewarded ad): ×3 event tokens for a while */
+  startEventBoost(): void {
+    const base = Math.max(Date.now(), this.state.eventBoostUntil ?? 0);
+    this.state.eventBoostUntil = base + EVENT_BOOST_MIN * 60_000;
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
   }
 
   eventGenCount(id: string): number { return this.state.eventGens[id] ?? 0; }
-  eventGenCostFor(id: string): number { return eventGenCost(EVENT_GEN_BY_ID[id], this.eventGenCount(id)); }
 
-  buyEventGen(id: string): boolean {
+  /** bulk-buy cost + count for an event business, like the main game's buyCost */
+  eventBuyCost(id: string, amount: BuyAmount): { count: number; cost: number } {
+    return eventBuyCost(EVENT_GEN_BY_ID[id], this.eventGenCount(id), amount, this.state.eventTokens);
+  }
+
+  buyEventGen(id: string, amount: BuyAmount = 1): boolean {
     const def = EVENT_GEN_BY_ID[id];
     if (!def) return false;
-    const cost = this.eventGenCostFor(id);
+    const { count, cost } = this.eventBuyCost(id, amount);
     if (this.state.eventTokens < cost) return false;
     this.state.eventTokens -= cost;
-    this.state.eventGens[id] = this.eventGenCount(id) + 1;
+    this.state.eventGens[id] = this.eventGenCount(id) + count;
     if (this.state.sfxOn) audio.sfxBuy();
     this.save();
     this.emit();
