@@ -176,9 +176,13 @@ export const en: Dict = {
   ev_footer: 'Tokens keep accruing while you play the main game too. Come back before the timer ends!',
   ev_over_t: 'Festival ended!', ev_over_d: 'Your Event Tokens converted to Gems. A new festival has begun!',
   ev_frenzy: 'Festival Frenzy — ×3 tokens for 1h', ev_frenzy_on: 'Frenzy active · ×3 tokens · {t}',
-  ev_confetti_n: 'Time Confetti Stand', ev_carousel_n: 'Chrono Carousel',
-  ev_fireworks_n: 'Paradox Fireworks', ev_ferris_n: 'Eternity Ferris Wheel',
-  ev_bumper_n: 'Quantum Bumper Cars', ev_portal_n: 'Rift Portal Ride',
+  ev_next_stage: 'Next stage', ev_unlock: 'Unlock stage', ev_stage_reward: 'x{n} income + 4 new stalls',
+  ev_st_fair: 'Village Fair', ev_st_bazaar: 'Golden Bazaar', ev_st_carnival: 'Steam Carnival', ev_st_expo: 'Neon Expo', ev_st_cosmic: 'Cosmic Festival',
+  ev_confetti_n: 'Confetti Stand', ev_popcorn_n: 'Popcorn Cart', ev_balloon_n: 'Balloon Stall', ev_carousel_n: 'Carousel',
+  ev_lantern_n: 'Lantern Show', ev_fortune_n: 'Fortune Tent', ev_spice_n: 'Spice Wheel', ev_firedance_n: 'Fire Dancers',
+  ev_organ_n: 'Steam Organ', ev_ferris_n: 'Ferris Wheel', ev_fireworks_n: 'Fireworks', ev_automaton_n: 'Automaton Show',
+  ev_arcade_n: 'Neon Arcade', ev_laser_n: 'Laser Show', ev_hover_n: 'Hover Bumpers', ev_hologram_n: 'Hologram Stage',
+  ev_starcaro_n: 'Star Carousel', ev_nebula_n: 'Nebula Fireworks', ev_coaster_n: 'Gravity Coaster', ev_portal_n: 'Rift Portal',
 };
 
 export const tr: Dict = {
@@ -357,9 +361,13 @@ export const tr: Dict = {
   ev_footer: 'Ana oyunu oynarken de jetonlar birikmeye devam eder. Süre bitmeden geri gel!',
   ev_over_t: 'Festival bitti!', ev_over_d: 'Etkinlik Jetonların Elmasa dönüştü. Yeni bir festival başladı!',
   ev_frenzy: 'Festival Çılgınlığı — 1s boyunca ×3 jeton', ev_frenzy_on: 'Çılgınlık aktif · ×3 jeton · {t}',
-  ev_confetti_n: 'Zaman Konfeti Tezgahı', ev_carousel_n: 'Chrono Atlıkarınca',
-  ev_fireworks_n: 'Paradoks Havai Fişek', ev_ferris_n: 'Sonsuzluk Dönme Dolabı',
-  ev_bumper_n: 'Kuantum Çarpışan Araba', ev_portal_n: 'Yarık Portalı',
+  ev_next_stage: 'Sonraki seviye', ev_unlock: 'Seviyeyi aç', ev_stage_reward: 'x{n} gelir + 4 yeni tezgah',
+  ev_st_fair: 'Köy Panayırı', ev_st_bazaar: 'Altın Çarşı', ev_st_carnival: 'Buhar Karnavalı', ev_st_expo: 'Neon Fuar', ev_st_cosmic: 'Kozmik Festival',
+  ev_confetti_n: 'Konfeti Tezgahı', ev_popcorn_n: 'Patlamış Mısır Arabası', ev_balloon_n: 'Balon Tezgahı', ev_carousel_n: 'Atlıkarınca',
+  ev_lantern_n: 'Fener Gösterisi', ev_fortune_n: 'Falcı Çadırı', ev_spice_n: 'Baharat Çarkı', ev_firedance_n: 'Ateş Dansçıları',
+  ev_organ_n: 'Buharlı Org', ev_ferris_n: 'Dönme Dolap', ev_fireworks_n: 'Havai Fişek', ev_automaton_n: 'Otomaton Gösterisi',
+  ev_arcade_n: 'Neon Atari', ev_laser_n: 'Lazer Gösterisi', ev_hover_n: 'Hover Çarpışan', ev_hologram_n: 'Hologram Sahnesi',
+  ev_starcaro_n: 'Yıldız Atlıkarınca', ev_nebula_n: 'Nebula Havai Fişeği', ev_coaster_n: 'Yerçekimi Treni', ev_portal_n: 'Yarık Portalı',
 };
 
 export const es: Dict = {

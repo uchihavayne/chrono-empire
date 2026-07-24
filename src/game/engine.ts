@@ -20,7 +20,7 @@ import {
 } from './expedition';
 import {
   EVENT_BOOST_MIN, EVENT_BOOST_MULT, EVENT_GEN_BY_ID, EVENT_GENS, EVENT_OFFLINE_CAP_H,
-  EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
+  EVENT_STAGES, EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
 } from './event';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
@@ -132,6 +132,8 @@ export interface GameState {
   eventTokensEarned: number;
   /** event-business counts this cycle */
   eventGens: Record<string, number>;
+  /** festival stages unlocked this cycle (like eras); starts at 1 */
+  eventStagesUnlocked: number;
   /** last time event income was accrued (for offline) */
   eventLastSeen: number;
   /** gems awaiting a "your event paid out" celebration (set on rollover) */
@@ -215,6 +217,7 @@ function migrate(save: any): any {
     if (typeof save.eventPayoutGems !== 'number') save.eventPayoutGems = 0;
   }
   if (typeof save.eventBoostUntil !== 'number') save.eventBoostUntil = 0;
+  if (typeof save.eventStagesUnlocked !== 'number' || save.eventStagesUnlocked < 1) save.eventStagesUnlocked = 1;
   save.version = VERSION;
   return save;
 }
@@ -294,6 +297,7 @@ function defaultState(): GameState {
     eventTokens: EVENT_START_TOKENS,
     eventTokensEarned: 0,
     eventGens: {},
+    eventStagesUnlocked: 1,
     eventLastSeen: Date.now(),
     eventPayoutGems: 0,
     eventBoostUntil: 0,
@@ -1480,14 +1484,43 @@ export class GameEngine {
     this.state.eventTokens = EVENT_START_TOKENS;
     this.state.eventTokensEarned = 0;
     this.state.eventGens = {};
+    this.state.eventStagesUnlocked = 1;
     this.state.eventLastSeen = Date.now();
   }
 
-  /** total Event Tokens produced per second by owned event businesses (×3 during a Frenzy) */
+  /** the current stage's global multiplier (unlocking a stage multiplies ALL event income) */
+  eventStageMult(): number {
+    const i = Math.min(this.state.eventStagesUnlocked, EVENT_STAGES.length) - 1;
+    return EVENT_STAGES[Math.max(0, i)].mult;
+  }
+
+  /** tokens/sec from one business AFTER the stage multiplier (for the UI) */
+  eventGenIncome(id: string): number {
+    return eventGenRate(EVENT_GEN_BY_ID[id], this.eventGenCount(id)) * this.eventStageMult();
+  }
+
+  /** total Event Tokens produced per second (stage mult × Frenzy boost) */
   eventIncomePerSec(): number {
     let t = 0;
     for (const g of EVENT_GENS) t += eventGenRate(g, this.state.eventGens[g.id] ?? 0);
-    return t * (this.eventBoostActive() ? EVENT_BOOST_MULT : 1);
+    return t * this.eventStageMult() * (this.eventBoostActive() ? EVENT_BOOST_MULT : 1);
+  }
+
+  /** token cost to unlock the next festival stage, or null if all unlocked */
+  eventNextStageCost(): number | null {
+    const next = EVENT_STAGES[this.state.eventStagesUnlocked];
+    return next ? next.unlockCost : null;
+  }
+
+  unlockEventStage(): boolean {
+    const cost = this.eventNextStageCost();
+    if (cost === null || this.state.eventTokens < cost) return false;
+    this.state.eventTokens -= cost;
+    this.state.eventStagesUnlocked++;
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return true;
   }
 
   eventBoostActive(): boolean { return Date.now() < (this.state.eventBoostUntil ?? 0); }
