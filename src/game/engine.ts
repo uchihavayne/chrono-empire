@@ -15,8 +15,8 @@ import {
 } from './data';
 import { audio } from '../services/audio';
 import {
-  EXP_CLEAR_BONUS, EXP_FREE_PER_DAY, EXP_MAX_PER_DAY, EXP_STAGES, EXP_UNLOCK_ERAS,
-  RELIC_BY_ID, relicCost, shardsForStage,
+  EXP_FREE_PER_DAY, EXP_MAX_PER_DAY, EXP_START_STABILITY, EXP_UNLOCK_ERAS,
+  RELIC_BY_ID, relicCost,
 } from './expedition';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
@@ -1367,18 +1367,16 @@ export class GameEngine {
     return true;
   }
 
-  /** bank the run's shards. depth = deepest stage CLEARED (0..EXP_STAGES). */
-  finishExpedition(depth: number, shardMult = 1): number {
-    let shards = 0;
-    for (let d = 1; d <= Math.min(depth, EXP_STAGES); d++) shards += shardsForStage(d);
-    if (depth >= EXP_STAGES) shards = Math.round(shards * EXP_CLEAR_BONUS);
-    shards = Math.round(shards * shardMult);
-    this.state.shards += shards;
+  /** bank a decision-run's earned shards. `shards` already computed by the run UI; `depth` = nodes
+   *  survived. The UI applies the 50% collapse penalty before calling this. */
+  finishExpedition(shards: number, depth: number): number {
+    const banked = Math.max(0, Math.round(shards));
+    this.state.shards += banked;
     this.state.expBestDepth = Math.max(this.state.expBestDepth, depth);
-    if (shards > 0 && this.state.sfxOn) audio.sfxReward();
+    if (banked > 0 && this.state.sfxOn) audio.sfxReward();
     this.save();
     this.emit();
-    return shards;
+    return banked;
   }
 
   /** unmount the expedition overlay (called from its result screen) */
@@ -1406,9 +1404,9 @@ export class GameEngine {
     return true;
   }
 
-  /** relic_power makes stages a bit easier: extra stage time as a fraction */
-  expeditionTimeBonus(): number {
-    return this.relicLevel('relic_power') * RELIC_BY_ID['relic_power'].value;
+  /** relic_start adds to the Stability a run begins with */
+  expeditionStartStability(): number {
+    return EXP_START_STABILITY + this.relicLevel('relic_start') * RELIC_BY_ID['relic_start'].value;
   }
 }
 

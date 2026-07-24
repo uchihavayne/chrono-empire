@@ -1,182 +1,132 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ERAS } from '../game/data';
+import { formatNumber } from '../game/format';
 import {
-  EXP_HEARTS, EXP_STAGES, rollDraft, shardsForStage, stageForDepth,
-  type DraftDef, type StageDef,
+  EXP_COLLAPSE_KEEP, newRun, resolveOffer, rollNode,
+  type Offer, type Resolution, type RunState,
 } from '../game/expedition';
 import { useGame, useT } from '../hooks';
 import { audio } from '../services/audio';
 
-// Temporal Expeditions — the active roguelite run. Fullscreen overlay: 10 quick timed
-// mini-stages, 3 hearts, a 1-of-3 relic draft between stages, Relic Shards banked per depth.
-// All run state lives HERE (transient); only the final result is reported to the engine.
+// Temporal Expeditions — DECISION-BASED push-your-luck run. At each node you pick 1 of a few
+// event doors (safe drift / risky rift / greedy trade / relic echo / healing haven / paradox
+// jackpot). Escape any time to bank 100%; if Stability hits 0 the timeline collapses (keep 50%).
 
-type Phase = 'intro' | 'ready' | 'play' | 'failed' | 'draft' | 'result';
+type Phase = 'intro' | 'choosing' | 'result';
 
-interface Bubble { id: number; x: number; y: number }
+const OFFER_META: Record<string, { icon: string; tone: string }> = {
+  safe:    { icon: '🕊️', tone: 'safe' },
+  heal:    { icon: '✨', tone: 'heal' },
+  greed:   { icon: '💎', tone: 'greed' },
+  gamble:  { icon: '🎲', tone: 'gamble' },
+  jackpot: { icon: '🌟', tone: 'jackpot' },
+  relic:   { icon: '🔮', tone: 'relic' },
+};
 
 export function ExpeditionMode() {
   const engine = useGame();
   const t = useT();
-  const sfx = engine.state.sfxOn;
+  const s = engine.state;
+  const sfx = s.sfxOn;
 
   const [phase, setPhase] = useState<Phase>('intro');
-  const [depth, setDepth] = useState(1);
-  const [hearts, setHearts] = useState(EXP_HEARTS);
-  const [buffs, setBuffs] = useState<Record<string, number>>({});
-  const [stage, setStage] = useState<StageDef>(() => stageForDepth(1));
-  const [eraFlavor, setEraFlavor] = useState(() => ERAS[Math.floor(Math.random() * ERAS.length)]);
-  const [draftOptions, setDraftOptions] = useState<DraftDef[]>([]);
-  const [result, setResult] = useState<{ cleared: boolean; shards: number } | null>(null);
+  const [run, setRun] = useState<RunState>(() => {
+    const r = newRun();
+    r.stability = engine.expeditionStartStability();
+    return r;
+  });
+  const maxStability = useMemo(() => engine.expeditionStartStability(), [engine]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [era, setEra] = useState(() => ERAS[Math.floor(Math.random() * ERAS.length)]);
+  const [outcome, setOutcome] = useState<{ res: Resolution; offer: Offer } | null>(null);
+  const [ended, setEnded] = useState<{ collapsed: boolean; banked: number } | null>(null);
 
-  // ── buff-adjusted stage parameters ──
-  const timeSec = stage.timeSec * (1 + engine.expeditionTimeBonus()) + 2 * (buffs.time_plus ?? 0);
-  const target = Math.max(1, Math.round(stage.target * Math.pow(0.88, buffs.ease ?? 0)));
-  const zoneWidth = Math.min(0.5, stage.zoneWidth * (1 + 0.4 * (buffs.zone_wide ?? 0)));
-  const bubbleLife = stage.bubbleLife + 0.4 * (buffs.bubble_slow ?? 0);
+  const nextNode = (r: RunState) => {
+    setOffers(rollNode(r.depth, Math.random));
+    setEra(ERAS[Math.floor(Math.random() * ERAS.length)]);
+    setOutcome(null);
+    setPhase('choosing');
+  };
 
-  // ── shared countdown ──
-  const [timeLeft, setTimeLeft] = useState(timeSec);
-  const endAt = useRef(0);
+  const dive = () => {
+    if (sfx) audio.sfxAnomaly();
+    nextNode(run);
+  };
 
-  // ── per-kind progress ──
-  const [taps, setTaps] = useState(0);
-  const [hits, setHits] = useState(0);
-  const [pops, setPops] = useState(0);
-  const [zonePos, setZonePos] = useState(0.5);
-  const [zoneCenter, setZoneCenter] = useState(0.5);
-  const [zoneFlash, setZoneFlash] = useState<'hit' | 'miss' | null>(null);
-  const [bubbles, setBubbles] = useState<Bubble[]>([]);
-  const bubbleId = useRef(0);
-  const progress = stage.kind === 'tap' ? taps : stage.kind === 'zone' ? hits : pops;
-  const progressRef = useRef(0);
-  progressRef.current = progress;
-
-  const shardMult = 1 + 0.2 * (buffs.shard_boost ?? 0);
-  const bankedFor = (d: number) => { let s = 0; for (let i = 1; i <= d; i++) s += shardsForStage(i); return s; };
-
-  const newZoneCenter = useCallback((w: number) => {
-    setZoneCenter(w / 2 + Math.random() * (1 - w));
-  }, []);
-
-  const beginStage = useCallback((d: number) => {
-    const st = stageForDepth(d);
-    setStage(st);
-    setEraFlavor(ERAS[Math.floor(Math.random() * ERAS.length)]);
-    setTaps(0); setHits(0); setPops(0); setBubbles([]);
-    setPhase('ready');
-  }, []);
-
-  const startPlay = useCallback(() => {
-    endAt.current = Date.now() + timeSec * 1000;
-    setTimeLeft(timeSec);
-    if (stage.kind === 'zone') newZoneCenter(zoneWidth);
-    setPhase('play');
-  }, [timeSec, stage.kind, zoneWidth, newZoneCenter]);
-
-  const finish = useCallback((clearedDepth: number) => {
-    const shards = engine.finishExpedition(clearedDepth, shardMult);
-    setResult({ cleared: clearedDepth >= EXP_STAGES, shards });
+  const bankAndEnd = (r: RunState, collapsed: boolean) => {
+    const kept = Math.round(r.shards * (collapsed ? EXP_COLLAPSE_KEEP : 1));
+    const banked = engine.finishExpedition(kept, r.depth);
+    if (collapsed && sfx) audio.sfxError();
+    setEnded({ collapsed, banked });
     setPhase('result');
-  }, [engine, shardMult]);
-
-  const stageCleared = useCallback(() => {
-    if (sfx) audio.sfxUnlock();
-    if (depth >= EXP_STAGES) { finish(EXP_STAGES); return; }
-    setDraftOptions(rollDraft());
-    setPhase('draft');
-  }, [depth, finish, sfx]);
-
-  const stageFailed = useCallback(() => {
-    if (sfx) audio.sfxError();
-    if (hearts <= 1) { setHearts(0); finish(depth - 1); return; }
-    setHearts((h) => h - 1);
-    setPhase('failed');
-  }, [hearts, depth, finish, sfx]);
-
-  // countdown + zone marker animation. A 33ms interval, NOT requestAnimationFrame — rAF is
-  // fully paused in backgrounded/occluded webviews, which would freeze the timer & marker.
-  useEffect(() => {
-    if (phase !== 'play') return;
-    const t0 = Date.now();
-    const iv = window.setInterval(() => {
-      const left = (endAt.current - Date.now()) / 1000;
-      setTimeLeft(Math.max(0, left));
-      if (stage.kind === 'zone') {
-        const tt = (Date.now() - t0) / 1000;
-        setZonePos(0.5 + 0.5 * Math.sin(tt * stage.zoneSpeed * Math.PI * 2));
-      }
-      if (left <= 0) {
-        clearInterval(iv);
-        // time's up — did we make it?
-        if (progressRef.current >= target) stageCleared(); else stageFailed();
-      }
-    }, 33);
-    return () => clearInterval(iv);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, stage, target]);
-
-  // hunt: bubble spawner + expiry
-  useEffect(() => {
-    if (phase !== 'play' || stage.kind !== 'hunt') return;
-    const spawn = window.setInterval(() => {
-      const id = ++bubbleId.current;
-      setBubbles((bs) => [...bs.slice(-6), { id, x: 8 + Math.random() * 76, y: 14 + Math.random() * 58 }]);
-      window.setTimeout(() => setBubbles((bs) => bs.filter((b) => b.id !== id)), bubbleLife * 1000);
-    }, 620);
-    return () => clearInterval(spawn);
-  }, [phase, stage.kind, bubbleLife]);
-
-  // clear the stage the moment the target is reached (no need to wait out the clock)
-  useEffect(() => {
-    if (phase === 'play' && progress >= target) stageCleared();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progress, target, phase]);
-
-  const pickDraft = (d: DraftDef) => {
-    if (sfx) audio.sfxManager();
-    if (d.id === 'heart_up') setHearts((h) => h + 1);
-    else setBuffs((b) => ({ ...b, [d.id]: (b[d.id] ?? 0) + 1 }));
-    const next = depth + 1;
-    setDepth(next);
-    beginStage(next);
   };
 
-  const zoneTap = () => {
-    if (Math.abs(zonePos - zoneCenter) <= zoneWidth / 2) {
-      if (sfx) audio.sfxTap();
-      setHits((h) => h + 1);
-      setZoneFlash('hit');
-      newZoneCenter(zoneWidth);
-    } else {
-      if (sfx) audio.sfxError();
-      setZoneFlash('miss');
+  const choose = (offer: Offer) => {
+    if (outcome) return; // already resolving this node
+    const r: RunState = { ...run, buffs: { ...run.buffs } };
+    const res = resolveOffer(offer, r, Math.random);
+    r.shards = Math.max(0, r.shards + res.dShards);
+    r.stability = Math.min(maxStability, r.stability + res.dStability);
+    r.depth += 1;
+    if (res.buff) r.buffs[res.buff] = (r.buffs[res.buff] ?? 0) + 1;
+    if (r.buffs.regen) r.stability = Math.min(maxStability, r.stability + 6 * r.buffs.regen);
+    setRun(r);
+    setOutcome({ res, offer });
+
+    if (res.success === true && sfx) audio.sfxReward();
+    else if (res.success === false && sfx) audio.sfxError();
+    else if (offer.kind === 'relic' && sfx) audio.sfxManager();
+    else if (sfx) audio.sfxTap();
+
+    if (r.stability <= 0) {
+      window.setTimeout(() => bankAndEnd(r, true), 1200);
     }
-    window.setTimeout(() => setZoneFlash(null), 220);
   };
 
-  const popBubble = (id: number) => {
-    if (sfx) audio.sfxTap();
-    setBubbles((bs) => bs.filter((b) => b.id !== id));
-    setPops((p) => p + 1);
+  const goDeeper = () => nextNode(run);
+
+  const stabPct = Math.max(0, Math.min(100, (run.stability / maxStability) * 100));
+  const stabColor = stabPct > 50 ? '#45e08a' : stabPct > 25 ? '#ffc63c' : '#ff5c74';
+
+  const offerTitle = (o: Offer) => t(`exo_${o.kind}_t`);
+  const offerDesc = (o: Offer) => {
+    if (o.kind === 'safe') return t('exo_safe_d', { n: o.shards });
+    if (o.kind === 'heal') return t('exo_heal_d', { n: o.stability, s: o.shards });
+    if (o.kind === 'greed') return t('exo_greed_d', { n: o.shards, s: -o.stability });
+    if (o.kind === 'gamble') return t('exo_gamble_d', { p: Math.round(o.odds * 100), n: o.shards, s: -o.stability });
+    if (o.kind === 'jackpot') return t('exo_jackpot_d', { p: Math.round(o.odds * 100), n: o.shards });
+    if (o.kind === 'relic') return t(`exb_${o.buff}_d`);
+    return '';
   };
 
-  const instruction =
-    stage.kind === 'tap' ? t('exp_tap_i', { n: target })
-    : stage.kind === 'zone' ? t('exp_zone_i', { n: target })
-    : t('exp_hunt_i', { n: target });
-
-  const timePct = Math.max(0, Math.min(100, (timeLeft / timeSec) * 100));
+  const outcomeText = (res: Resolution, offer: Offer): string => {
+    if (offer.kind === 'relic') return t(`exb_${offer.buff}_got`);
+    if (res.wipedBank) return t('exo_wiped');
+    if (res.success === false) return t('exo_fail', { s: Math.abs(res.dStability) });
+    if (res.dStability > 0 && res.dShards > 0) return t('exo_heal_r', { n: res.dStability, s: res.dShards });
+    if (res.dStability < 0) return t('exo_greed_r', { n: res.dShards, s: Math.abs(res.dStability) });
+    return t('exo_win', { n: res.dShards });
+  };
 
   return (
     <div className="exp-overlay">
-      {/* header: depth · hearts · banked shards · give up */}
       {phase !== 'intro' && phase !== 'result' && (
         <div className="exp-head">
-          <span className="exp-depth">⏳ {depth}/{EXP_STAGES}</span>
-          <span className="exp-hearts">{'❤️'.repeat(hearts)}{'🖤'.repeat(Math.max(0, EXP_HEARTS - hearts))}</span>
-          <span className="exp-shards">🔶 {Math.round(bankedFor(depth - 1) * shardMult)}</span>
-          <button className="exp-quit" onClick={() => finish(depth - 1)}>✕</button>
+          <span className="exp-depth">⏳ {t('exp_node', { n: run.depth })}</span>
+          <div className="exp-stab">
+            <div className="exp-stab-bar"><span style={{ width: `${stabPct}%`, background: stabColor }} /></div>
+            <span className="exp-stab-num" style={{ color: stabColor }}>{Math.ceil(run.stability)}</span>
+          </div>
+          <span className="exp-shards">🔶 {formatNumber(run.shards, s.notation)}</span>
+        </div>
+      )}
+
+      {/* active run-buffs */}
+      {phase === 'choosing' && Object.keys(run.buffs).length > 0 && (
+        <div className="exp-buffs">
+          {Object.entries(run.buffs).filter(([, n]) => n > 0).map(([id, n]) => (
+            <span key={id} className="exp-buff-chip">{t(`exb_${id}_i`)}{n > 1 ? ` ×${n}` : ''}</span>
+          ))}
         </div>
       )}
 
@@ -184,99 +134,52 @@ export function ExpeditionMode() {
         <div className="exp-center">
           <div className="exp-big-icon">🌀</div>
           <h2 className="exp-title">{t('exp_title')}</h2>
-          <p className="exp-desc">{t('exp_intro', { n: EXP_STAGES, h: EXP_HEARTS })}</p>
-          <button className="rebirth-btn" onClick={() => beginStage(1)}>{t('exp_dive')}</button>
+          <p className="exp-desc">{t('exp_intro2')}</p>
+          <button className="rebirth-btn exp-btn" onClick={dive}>{t('exp_dive')}</button>
         </div>
       )}
 
-      {phase === 'ready' && (
-        <div className="exp-center">
-          <div className="exp-flavor">{eraFlavor.icon} {t('exp_timeline', { name: t(`era_${eraFlavor.id}`) })}</div>
-          <div className="exp-big-icon">{stage.kind === 'tap' ? '👆' : stage.kind === 'zone' ? '🎯' : '🫧'}</div>
-          <h2 className="exp-title">{t('exp_stage', { n: depth })}</h2>
-          <p className="exp-desc">{instruction}</p>
-          <p className="exp-sub">⏱️ {Math.round(timeSec)}s</p>
-          <button className="rebirth-btn" onClick={startPlay}>{t('exp_go')}</button>
-        </div>
-      )}
-
-      {phase === 'play' && (
-        <div className="exp-arena">
-          <div className="exp-timerbar"><span style={{ width: `${timePct}%` }} /></div>
-          <div className="exp-goal">{instruction}</div>
-          <div className="exp-count">{progress} / {target}</div>
-
-          {stage.kind === 'tap' && (
-            <button
-              className="exp-tap-btn"
-              onPointerDown={() => { if (sfx) audio.sfxTap(); setTaps((n) => n + 1); }}
-            >
-              ⚡
-            </button>
-          )}
-
-          {stage.kind === 'zone' && (
-            <div className="exp-zone-wrap">
-              <div className="exp-zone-bar">
-                <span
-                  className="exp-zone-gold"
-                  style={{ left: `${(zoneCenter - zoneWidth / 2) * 100}%`, width: `${zoneWidth * 100}%` }}
-                />
-                <span className={`exp-zone-marker${zoneFlash ? ` ${zoneFlash}` : ''}`} style={{ left: `${zonePos * 100}%` }} />
-              </div>
-              <button className="exp-tap-btn zone" onPointerDown={zoneTap}>🎯</button>
-            </div>
-          )}
-
-          {stage.kind === 'hunt' && (
-            <div className="exp-hunt-field">
-              {bubbles.map((b) => (
-                <button
-                  key={b.id}
-                  className="exp-bubble"
-                  style={{ left: `${b.x}%`, top: `${b.y}%`, animationDuration: `${bubbleLife}s` }}
-                  onPointerDown={() => popBubble(b.id)}
-                >
-                  🌀
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {phase === 'failed' && (
-        <div className="exp-center">
-          <div className="exp-big-icon">💔</div>
-          <h2 className="exp-title">{t('exp_failed')}</h2>
-          <p className="exp-desc">{t('exp_failed_d', { n: hearts })}</p>
-          <button className="rebirth-btn" onClick={() => beginStage(depth)}>{t('exp_retry')}</button>
-          <button className="exp-giveup" onClick={() => finish(depth - 1)}>{t('exp_bank')}</button>
-        </div>
-      )}
-
-      {phase === 'draft' && (
-        <div className="exp-center">
-          <h2 className="exp-title">{t('exp_draft_t')}</h2>
-          <p className="exp-desc">{t('exp_draft_d')}</p>
-          <div className="exp-draft-row">
-            {draftOptions.map((d) => (
-              <button key={d.id} className="exp-draft-card" onClick={() => pickDraft(d)}>
-                <span className="exp-draft-icon">{d.icon}</span>
-                <span className="exp-draft-name">{t(`exp_b_${d.id}_n`)}</span>
-                <span className="exp-draft-desc">{t(`exp_b_${d.id}_d`)}</span>
+      {phase === 'choosing' && !outcome && (
+        <div className="exp-run">
+          <div className="exp-flavor">{era.icon} {t('exp_timeline', { name: t(`era_${era.id}`) })}</div>
+          <p className="exp-prompt">{t('exp_choose')}</p>
+          <div className="exp-doors">
+            {offers.map((o, i) => (
+              <button key={i} className={`exp-door ${OFFER_META[o.kind].tone}`} onClick={() => choose(o)}>
+                <span className="exp-door-icon">{OFFER_META[o.kind].icon}</span>
+                <span className="exp-door-title">{offerTitle(o)}</span>
+                <span className="exp-door-desc">{offerDesc(o)}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {phase === 'result' && result && (
+      {phase === 'choosing' && outcome && run.stability > 0 && (
         <div className="exp-center">
-          <div className="exp-big-icon">{result.cleared ? '🏆' : '🌀'}</div>
-          <h2 className="exp-title">{result.cleared ? t('exp_clear_t') : t('exp_over_t')}</h2>
-          <p className="exp-desc">{t('exp_reward', { n: result.shards })}</p>
-          <p className="exp-sub">{t('exp_best', { n: engine.state.expBestDepth })}</p>
+          <div className={`exp-outcome ${outcome.res.success === false || outcome.res.wipedBank ? 'bad' : 'good'}`}>
+            <div className="exp-big-icon">
+              {outcome.res.wipedBank ? '💥' : outcome.res.success === false ? '💔'
+                : outcome.offer.kind === 'relic' ? OFFER_META.relic.icon : '🔶'}
+            </div>
+            <p className="exp-outcome-text">{outcomeText(outcome.res, outcome.offer)}</p>
+          </div>
+          <div className="exp-run-actions">
+            <button className="rebirth-btn exp-btn" onClick={goDeeper}>{t('exp_deeper')}</button>
+            <button className="exp-escape" onClick={() => bankAndEnd(run, false)}>
+              🏳️ {t('exp_escape', { n: formatNumber(run.shards, s.notation) })}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && ended && (
+        <div className="exp-center">
+          <div className="exp-big-icon">{ended.collapsed ? '💥' : '🏆'}</div>
+          <h2 className="exp-title">{ended.collapsed ? t('exp_collapse_t') : t('exp_escaped_t')}</h2>
+          <p className="exp-desc">{ended.collapsed ? t('exp_collapse_d') : t('exp_escaped_d')}</p>
+          <div className="exp-reward-big">🔶 +{formatNumber(ended.banked, s.notation)}</div>
+          <p className="exp-sub">{t('exp_best', { n: s.expBestDepth })}</p>
           <button className="rebirth-btn" onClick={() => engine.closeExpedition()}>{t('exp_done')}</button>
         </div>
       )}
