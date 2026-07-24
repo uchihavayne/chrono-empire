@@ -22,6 +22,7 @@ import {
   EVENT_BOOST_MIN, EVENT_BOOST_MULT, EVENT_GEN_BY_ID, EVENT_GENS, EVENT_OFFLINE_CAP_H,
   EVENT_STAGES, EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
 } from './event';
+import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from './wheel';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
@@ -140,6 +141,9 @@ export interface GameState {
   eventPayoutGems: number;
   /** Festival Frenzy (ad-boost): ×3 event tokens until this timestamp */
   eventBoostUntil: number;
+  /** Daily Wheel: spins used today + the date (for the free + ad daily limits) */
+  wheelSpins: number;
+  wheelDate: string;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -156,7 +160,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 10;
+const VERSION = 11;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -218,6 +222,8 @@ function migrate(save: any): any {
   }
   if (typeof save.eventBoostUntil !== 'number') save.eventBoostUntil = 0;
   if (typeof save.eventStagesUnlocked !== 'number' || save.eventStagesUnlocked < 1) save.eventStagesUnlocked = 1;
+  if (typeof save.wheelSpins !== 'number') save.wheelSpins = 0;
+  if (typeof save.wheelDate !== 'string') save.wheelDate = '';
   save.version = VERSION;
   return save;
 }
@@ -301,6 +307,8 @@ function defaultState(): GameState {
     eventLastSeen: Date.now(),
     eventPayoutGems: 0,
     eventBoostUntil: 0,
+    wheelSpins: 0,
+    wheelDate: '',
   };
 }
 
@@ -1560,6 +1568,55 @@ export class GameEngine {
 
   /** clear the queued payout after the celebration modal is shown */
   claimEventPayout(): void { this.state.eventPayoutGems = 0; this.save(); this.emit(); }
+
+  // ─── Daily Wheel ───
+  private refreshWheelDay(): void {
+    const today = this.todayStr();
+    if (this.state.wheelDate !== today) { this.state.wheelDate = today; this.state.wheelSpins = 0; }
+  }
+  wheelSpinsLeft(): number { this.refreshWheelDay(); return Math.max(0, WHEEL_MAX_PER_DAY - this.state.wheelSpins); }
+  wheelFreeAvailable(): boolean { this.refreshWheelDay(); return this.state.wheelSpins < WHEEL_FREE_PER_DAY; }
+  /** past the free spin (but under the cap) the next spin needs a rewarded ad */
+  wheelNeedsAd(): boolean {
+    this.refreshWheelDay();
+    return this.state.wheelSpins >= WHEEL_FREE_PER_DAY && this.state.wheelSpins < WHEEL_MAX_PER_DAY;
+  }
+
+  /** spin the wheel → the winning prize index + a human amount granted. Caller checks limits. */
+  spinWheel(): { index: number; prizeId: string; kind: string; amount: number } | null {
+    this.refreshWheelDay();
+    if (this.state.wheelSpins >= WHEEL_MAX_PER_DAY) return null;
+    const index = rollWheel();
+    const prize = WHEEL_PRIZES[index];
+    let amount = prize.amount;
+    switch (prize.kind) {
+      case 'cash': {
+        amount = Math.max(this.totalIncomePerSec() * prize.amount, this.state.cash * 0.02, 250);
+        this.earn(amount);
+        break;
+      }
+      case 'gems':
+      case 'jackpot':
+        this.state.gems += prize.amount;
+        break;
+      case 'boost': {
+        const now = Date.now();
+        const base = Math.max(now, this.state.boostUntil);
+        this.state.boostUntil = base + prize.amount * 60_000;
+        break;
+      }
+      case 'card': {
+        const ids = rollBox('uncommon').slice(0, prize.amount);
+        this.grantCards(ids);
+        break;
+      }
+    }
+    this.state.wheelSpins++;
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return { index, prizeId: prize.id, kind: prize.kind, amount };
+  }
 
   /** accrue event tokens for elapsed seconds (live tick + offline) */
   private accrueEvent(seconds: number): void {

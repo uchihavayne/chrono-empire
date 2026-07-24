@@ -21,6 +21,7 @@ import { SpotlightTutorial } from './components/SpotlightTutorial';
 import { IntroScreen } from './components/IntroScreen';
 import { ExpeditionMode } from './components/ExpeditionMode';
 import { EventWorld } from './components/EventWorld';
+import { WheelModal } from './components/WheelModal';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -43,6 +44,7 @@ export default function App() {
   }
   const t = useMemo(() => makeT(s.lang), [s.lang]);
   const [intro, setIntro] = useState(true);
+  const [showWheel, setShowWheel] = useState(false);
   const [tab, setTab] = useState<Tab>('empire');
   // the era the player is currently VIEWING (drives backdrop + accent theme). Income
   // still uses the highest unlocked era; only the visuals follow what you browse.
@@ -202,6 +204,9 @@ export default function App() {
               {s.dailyClaimable && (
                 <span className="chip gift" onClick={() => setTab('more')}>🎁 {t('daily_title')}</span>
               )}
+              <span className={`chip wheel${engine.wheelFreeAvailable() ? ' ready' : ''}`} onClick={() => setShowWheel(true)}>
+                🎡 {t('wheel_title')}
+              </span>
             </div>
           </div>
 
@@ -378,6 +383,9 @@ export default function App() {
 
           {/* Event World (fullscreen parallel idle) */}
           {engine.eventWorldOpen && <EventWorld />}
+
+          {/* Daily Wheel */}
+          {showWheel && <WheelModal onClose={() => setShowWheel(false)} />}
 
           {/* event cycle ended → gems paid out */}
           {s.eventPayoutGems > 0 && (

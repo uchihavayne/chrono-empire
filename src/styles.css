@@ -1169,3 +1169,31 @@ select, .text-input {
   box-shadow: 0 4px 18px rgba(255,80,90,0.45); cursor: default; animation: festivalPulse 1.6s ease-in-out infinite;
 }
 .event-frenzy-tag { color: #ff8a3c; font-weight: 800; }
+
+/* ─── Daily Wheel ─── */
+.chip.wheel { cursor: pointer; }
+.chip.wheel.ready {
+  background: linear-gradient(120deg, #ff9d1c, #ff5c74);
+  color: #fff; border-color: rgba(255,150,80,0.6);
+  animation: festivalPulse 1.8s ease-in-out infinite;
+}
+.wheel-modal { text-align: center; }
+.wheel-wrap { position: relative; width: 250px; height: 250px; margin: 8px auto 4px; }
+.wheel-pointer {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  font-size: 26px; color: #ffd66a; z-index: 2; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+}
+.wheel-svg {
+  width: 250px; height: 250px;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));
+  border-radius: 50%;
+}
+.wheel-result { margin: 8px 0 4px; animation: revealPop 0.4s ease both; }
+.wheel-result-label { font-size: 13px; color: var(--text-dim); font-weight: 700; }
+.wheel-result-prize { font-size: 26px; font-weight: 800; color: #ffd66a; margin-top: 2px; }
+.wheel-spin { width: 100%; margin-top: 8px; }
+.wheel-left { font-size: 12px; color: var(--text-dim); font-weight: 700; margin-top: 8px; }
+.wheel-close {
+  display: block; margin: 10px auto 0; background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 700; text-decoration: underline;
+}
