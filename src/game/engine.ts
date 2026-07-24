@@ -18,6 +18,10 @@ import {
   EXP_FREE_PER_DAY, EXP_MAX_PER_DAY, EXP_START_STABILITY, EXP_UNLOCK_ERAS,
   RELIC_BY_ID, relicCost,
 } from './expedition';
+import {
+  EVENT_GEN_BY_ID, EVENT_GENS, EVENT_OFFLINE_CAP_H, EVENT_START_TOKENS,
+  eventCycleId, eventEndsAt, eventGemsFor, eventGenCost, eventGenRate,
+} from './event';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
@@ -119,6 +123,19 @@ export interface GameState {
   expDate: string;
   /** deepest stage ever cleared (bragging + future unlocks) */
   expBestDepth: number;
+  // ─── Event World (limited-time parallel world) ───
+  /** the 10-day cycle these event values belong to (rollover resets the world) */
+  eventCycleId: number;
+  /** spendable Event Tokens this cycle */
+  eventTokens: number;
+  /** lifetime Event Tokens earned THIS cycle (drives the end-of-cycle gem payout) */
+  eventTokensEarned: number;
+  /** event-business counts this cycle */
+  eventGens: Record<string, number>;
+  /** last time event income was accrued (for offline) */
+  eventLastSeen: number;
+  /** gems awaiting a "your event paid out" celebration (set on rollover) */
+  eventPayoutGems: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -135,7 +152,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 9;
+const VERSION = 10;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -185,6 +202,15 @@ function migrate(save: any): any {
     if (typeof save.expToday !== 'number') save.expToday = 0;
     if (typeof save.expDate !== 'string') save.expDate = '';
     if (typeof save.expBestDepth !== 'number') save.expBestDepth = 0;
+  }
+  // v9→v10: Event World.
+  if (v < 10) {
+    if (typeof save.eventCycleId !== 'number') save.eventCycleId = eventCycleId();
+    if (typeof save.eventTokens !== 'number') save.eventTokens = EVENT_START_TOKENS;
+    if (typeof save.eventTokensEarned !== 'number') save.eventTokensEarned = 0;
+    if (!save.eventGens || typeof save.eventGens !== 'object') save.eventGens = {};
+    if (typeof save.eventLastSeen !== 'number') save.eventLastSeen = Date.now();
+    if (typeof save.eventPayoutGems !== 'number') save.eventPayoutGems = 0;
   }
   save.version = VERSION;
   return save;
@@ -261,6 +287,12 @@ function defaultState(): GameState {
     expToday: 0,
     expDate: '',
     expBestDepth: 0,
+    eventCycleId: eventCycleId(),
+    eventTokens: EVENT_START_TOKENS,
+    eventTokensEarned: 0,
+    eventGens: {},
+    eventLastSeen: Date.now(),
+    eventPayoutGems: 0,
   };
 }
 
@@ -288,6 +320,7 @@ export class GameEngine {
   constructor() {
     this.state = this.load();
     this.syncManagers(); // managers derive from the (persistent) card collection
+    this.checkEventRollover(); // pay out + reset a finished event cycle BEFORE offline accrual
     this.applyOfflineProgress();
     this.refreshDaily();
     this.scheduleAnomaly();
@@ -470,6 +503,7 @@ export class GameEngine {
       // returning to a backgrounded tab/app: grant offline progress if meaningful
       const away = (Date.now() - this.state.lastSeen) / 1000;
       if (away > 60) {
+        this.checkEventRollover(); // an event may have ended while away
         this.applyOfflineProgress();
         this.refreshDaily();
         this.emit();
@@ -721,6 +755,8 @@ export class GameEngine {
 
   // ─── ticking ───
   private tick(dt: number): void {
+    // Event World tokens accrue continuously (event businesses are auto-producing)
+    this.accrueEvent(dt);
     for (const g of GENERATORS) {
       const gs = this.state.generators[g.id];
       if (gs.count === 0) continue;
@@ -1034,6 +1070,9 @@ export class GameEngine {
     const now = Date.now();
     const rawSeconds = (now - this.state.lastSeen) / 1000;
     this.state.lastSeen = now;
+    // Event World offline: accrue tokens (capped, no popup — it's a side world)
+    if (rawSeconds >= 60) this.accrueEvent(Math.min(rawSeconds, EVENT_OFFLINE_CAP_H * 3600));
+    this.state.eventLastSeen = now;
     if (rawSeconds < 60) return;
     const cap = this.offlineCapHours() * 3600;
     const seconds = Math.min(rawSeconds, cap);
@@ -1407,6 +1446,75 @@ export class GameEngine {
   /** relic_start adds to the Stability a run begins with */
   expeditionStartStability(): number {
     return EXP_START_STABILITY + this.relicLevel('relic_start') * RELIC_BY_ID['relic_start'].value;
+  }
+
+  // ─── Event World (limited-time parallel world) ───
+
+  /** transient — true while the Event World overlay is open (never saved) */
+  eventWorldOpen = false;
+
+  openEventWorld(): void {
+    this.checkEventRollover();
+    this.eventWorldOpen = true;
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.emit();
+  }
+  closeEventWorld(): void { this.eventWorldOpen = false; this.emit(); }
+
+  eventTimeLeftMs(): number { return Math.max(0, eventEndsAt() - Date.now()); }
+
+  /** if the 10-day cycle rolled over, pay out the previous cycle's tokens as gems and reset. */
+  checkEventRollover(): void {
+    const cur = eventCycleId();
+    if (this.state.eventCycleId === cur) return;
+    const gems = eventGemsFor(this.state.eventTokensEarned);
+    if (gems > 0) {
+      this.state.gems += gems;
+      this.state.eventPayoutGems += gems; // queued for the celebration modal
+    }
+    this.state.eventCycleId = cur;
+    this.state.eventTokens = EVENT_START_TOKENS;
+    this.state.eventTokensEarned = 0;
+    this.state.eventGens = {};
+    this.state.eventLastSeen = Date.now();
+  }
+
+  /** total Event Tokens produced per second by owned event businesses */
+  eventIncomePerSec(): number {
+    let t = 0;
+    for (const g of EVENT_GENS) t += eventGenRate(g, this.state.eventGens[g.id] ?? 0);
+    return t;
+  }
+
+  eventGenCount(id: string): number { return this.state.eventGens[id] ?? 0; }
+  eventGenCostFor(id: string): number { return eventGenCost(EVENT_GEN_BY_ID[id], this.eventGenCount(id)); }
+
+  buyEventGen(id: string): boolean {
+    const def = EVENT_GEN_BY_ID[id];
+    if (!def) return false;
+    const cost = this.eventGenCostFor(id);
+    if (this.state.eventTokens < cost) return false;
+    this.state.eventTokens -= cost;
+    this.state.eventGens[id] = this.eventGenCount(id) + 1;
+    if (this.state.sfxOn) audio.sfxBuy();
+    this.save();
+    this.emit();
+    return true;
+  }
+
+  /** gems the current cycle's earnings would pay out right now (live preview) */
+  eventGemsPreview(): number { return eventGemsFor(this.state.eventTokensEarned); }
+
+  /** clear the queued payout after the celebration modal is shown */
+  claimEventPayout(): void { this.state.eventPayoutGems = 0; this.save(); this.emit(); }
+
+  /** accrue event tokens for elapsed seconds (live tick + offline) */
+  private accrueEvent(seconds: number): void {
+    const rate = this.eventIncomePerSec();
+    if (rate <= 0) return;
+    const gained = rate * seconds;
+    this.state.eventTokens += gained;
+    this.state.eventTokensEarned += gained;
   }
 }
 

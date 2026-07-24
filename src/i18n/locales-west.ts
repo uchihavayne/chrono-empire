@@ -167,6 +167,16 @@ export const en: Dict = {
   relic_cost_n: 'Merchant Sigil', relic_cost_d: '-1% venture costs per level',
   relic_offline_n: 'Dream Anchor', relic_offline_d: '+30 min offline cap per level',
   relic_start_n: 'Chrono Ward', relic_start_d: '+5 starting Stability per level',
+  // Event World
+  ev_name: 'Temporal Rift Festival', ev_enter: 'Enter', ev_back: 'Back to Empire',
+  ev_banner: 'Limited event · ends in {t}', ev_ends: 'Ends in {t}',
+  ev_rate: '🎟️ {n} / sec', ev_payout: 'Payout at event end', ev_maxed: 'Max payout reached! 🎉',
+  ev_next_ms: 'Reach 🎟️{n} → 💠{g} total', ev_payout_hint: 'The more tokens you earn this event, the more Gems you get when it ends (capped, so no one gets rich).',
+  ev_stalls: 'Festival Stalls', ev_producing: '🎟️ {n} / sec', ev_stall_locked: 'Buy to start earning tokens',
+  ev_footer: 'Tokens keep accruing while you play the main game too. Come back before the timer ends!',
+  ev_over_t: 'Festival ended!', ev_over_d: 'Your Event Tokens converted to Gems. A new festival has begun!',
+  ev_confetti_n: 'Time Confetti Stand', ev_carousel_n: 'Chrono Carousel',
+  ev_fireworks_n: 'Paradox Fireworks', ev_ferris_n: 'Eternity Ferris Wheel',
 };
 
 export const tr: Dict = {
@@ -336,6 +346,16 @@ export const tr: Dict = {
   relic_cost_n: 'Tüccar Mührü', relic_cost_d: 'Seviye başına -%1 işletme maliyeti',
   relic_offline_n: 'Rüya Çapası', relic_offline_d: 'Seviye başına +30dk çevrimdışı limit',
   relic_start_n: 'Chrono Muhafızı', relic_start_d: 'Seviye başına +5 başlangıç Kararlılığı',
+  // Etkinlik Dünyası
+  ev_name: 'Zaman Yarığı Festivali', ev_enter: 'Gir', ev_back: 'İmparatorluğa dön',
+  ev_banner: 'Sınırlı etkinlik · {t} kaldı', ev_ends: '{t} kaldı',
+  ev_rate: '🎟️ {n} / sn', ev_payout: 'Etkinlik sonu ödülü', ev_maxed: 'En yüksek ödüle ulaşıldı! 🎉',
+  ev_next_ms: '🎟️{n} ulaş → toplam 💠{g}', ev_payout_hint: 'Bu etkinlikte ne kadar çok jeton kazanırsan, bitişte o kadar çok Elmas alırsın (tavanlı — kimse zengin olmaz).',
+  ev_stalls: 'Festival Tezgahları', ev_producing: '🎟️ {n} / sn', ev_stall_locked: 'Jeton kazanmaya başlamak için satın al',
+  ev_footer: 'Ana oyunu oynarken de jetonlar birikmeye devam eder. Süre bitmeden geri gel!',
+  ev_over_t: 'Festival bitti!', ev_over_d: 'Etkinlik Jetonların Elmasa dönüştü. Yeni bir festival başladı!',
+  ev_confetti_n: 'Zaman Konfeti Tezgahı', ev_carousel_n: 'Chrono Atlıkarınca',
+  ev_fireworks_n: 'Paradoks Havai Fişek', ev_ferris_n: 'Sonsuzluk Dönme Dolabı',
 };
 
 export const es: Dict = {

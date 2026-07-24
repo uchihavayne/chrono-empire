@@ -20,6 +20,7 @@ import { Showcase } from './components/Showcase';
 import { SpotlightTutorial } from './components/SpotlightTutorial';
 import { IntroScreen } from './components/IntroScreen';
 import { ExpeditionMode } from './components/ExpeditionMode';
+import { EventWorld } from './components/EventWorld';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -231,6 +232,16 @@ export default function App() {
             </div>
           )}
 
+          {/* Event World entry — a limited-time parallel world */}
+          <button className="festival-banner" onClick={() => engine.openEventWorld()}>
+            <span className="festival-emblem">🎪</span>
+            <div className="festival-mid">
+              <div className="festival-name">{t('ev_name')}</div>
+              <div className="festival-sub">{t('ev_banner', { t: formatDuration(engine.eventTimeLeftMs() / 1000) })}</div>
+            </div>
+            <span className="festival-go">{t('ev_enter')} ›</span>
+          </button>
+
           {/* content */}
           <div className="content">
             {tab === 'empire' && <EmpireTab onToast={onToast} viewedEra={viewedEra} setViewedEra={setViewedEra} />}
@@ -364,6 +375,22 @@ export default function App() {
 
           {/* Temporal Expedition run (fullscreen, above everything but the intro) */}
           {engine.expeditionOpen && <ExpeditionMode />}
+
+          {/* Event World (fullscreen parallel idle) */}
+          {engine.eventWorldOpen && <EventWorld />}
+
+          {/* event cycle ended → gems paid out */}
+          {s.eventPayoutGems > 0 && (
+            <Modal>
+              <div className="m-icon">🎪</div>
+              <h3>{t('ev_over_t')}</h3>
+              <p>{t('ev_over_d')}</p>
+              <div className="m-value">💠 +{formatNumber(s.eventPayoutGems, s.notation)}</div>
+              <div className="m-actions">
+                <button className="m-green" onClick={() => engine.claimEventPayout()}>{t('collect')}</button>
+              </div>
+            </Modal>
+          )}
 
           {intro && <IntroScreen onDone={() => setIntro(false)} />}
 
