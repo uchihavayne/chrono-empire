@@ -188,7 +188,7 @@ export default function App() {
             </div>
             <div className="chips">
               <span className="chip rank" onClick={() => setTab('rebirth')}>
-                {rank.icon} {rank.name}
+                {rank.icon} {t(`rank_${rank.id}`)}
               </span>
               <span className="chip era">{era.icon} {t(`era_${era.id}`)}</span>
               <span className="chip gem"><GemIcon size={13} /> {formatNumber(s.crystals, s.notation)}</span>

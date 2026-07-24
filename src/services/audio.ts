@@ -87,13 +87,48 @@ class AudioEngine {
 
   // ─── single looping background track (replaces the per-era procedural music) ───
   private bg: HTMLAudioElement | null = null;
+  private bgGain: GainNode | null = null;
+  private bgWired = false;
+
+  constructor() {
+    // pause ALL audio when the app is backgrounded, resume on return. Without this the music
+    // keeps playing on the phone after the player switches apps.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          try { this.bg?.pause(); } catch { /* ignore */ }
+          this.ctx?.suspend?.();
+        } else if (this.started) {
+          this.ctx?.resume?.();
+          if (this.musicEnabled) this.bg?.play().catch(() => { /* needs a gesture */ });
+        }
+      });
+    }
+  }
+
+  /** iOS IGNORES HTMLMediaElement.volume entirely — the only way to control music volume there
+   *  is to route the element through a WebAudio GainNode and drive the gain. */
+  private applyMusicVol(): void {
+    if (this.bgGain) this.bgGain.gain.value = 0.7 * this.musicVol;
+    else if (this.bg) this.bg.volume = 0.5 * this.musicVol; // pre-ctx fallback (non-iOS)
+  }
+
   private startBg(): void {
     if (!this.musicEnabled) return;
     if (!this.bg) {
       this.bg = new Audio('/bg-music.mp3');
       this.bg.loop = true;
     }
-    this.bg.volume = 0.5 * this.musicVol;
+    if (!this.bgWired && this.ensure() && this.ctx && this.master) {
+      try {
+        const src = this.ctx.createMediaElementSource(this.bg);
+        this.bgGain = this.ctx.createGain();
+        src.connect(this.bgGain);
+        this.bgGain.connect(this.master);
+        this.bgWired = true;
+      } catch { /* createMediaElementSource can only run once — already wired */ }
+    }
+    this.applyMusicVol();
     this.bg.play().catch(() => { /* autoplay blocked until a gesture — retried on next unlock */ });
   }
   private stopBg(): void {
@@ -127,10 +162,10 @@ class AudioEngine {
     if (this.stepTimer !== null) { clearInterval(this.stepTimer); this.stepTimer = null; }
   }
 
-  /** music volume 0..1 — affects the looping soundtrack live. */
+  /** music volume 0..1 — affects the looping soundtrack live (via the WebAudio gain on iOS). */
   setMusicVolume(v: number): void {
     this.musicVol = Math.max(0, Math.min(1, v));
-    if (this.bg) this.bg.volume = 0.5 * this.musicVol;
+    this.applyMusicVol();
   }
 
   /** SFX volume 0..1 — affects all sound effects live via the SFX bus gain. */

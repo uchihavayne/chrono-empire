@@ -436,21 +436,22 @@ export const INVESTOR_BY_ID: Record<string, InvestorDef> = Object.fromEntries(
 // ─── Chrono Rank: account-level prestige tier from total crystals earned ───
 // Long-term identity + a small permanent global bonus per rank, shown in the header.
 
-export interface RankDef { name: string; icon: string; at: number }
+export interface RankDef { id: string; icon: string; at: number }
 
+// `id` maps to i18n key `rank_<id>` (translated in all languages); names are no longer hardcoded.
 export const RANKS: RankDef[] = [
-  { name: 'Gezgin',      icon: '🕒', at: 0 },
-  { name: 'Çırak',       icon: '⏳', at: 50 },
-  { name: 'Kâşif',       icon: '🧭', at: 250 },
-  { name: 'Zaman Ustası',icon: '⌛', at: 1000 },
-  { name: 'Şovalye',     icon: '🛡️', at: 4000 },
-  { name: 'Büyücü',      icon: '🔮', at: 15000 },
-  { name: 'Efendi',      icon: '👑', at: 60000 },
-  { name: 'Kâhin',       icon: '🌙', at: 250000 },
-  { name: 'Yıldız Lordu',icon: '🌟', at: 1e6 },
-  { name: 'Ebedi',       icon: '🌌', at: 5e6 },
-  { name: 'Zaman Tanrısı',icon: '⚡', at: 25e6 },
-  { name: 'Sonsuz',      icon: '♾️', at: 1e8 },
+  { id: 'wanderer',   icon: '🕒', at: 0 },
+  { id: 'apprentice', icon: '⏳', at: 50 },
+  { id: 'explorer',   icon: '🧭', at: 250 },
+  { id: 'timemaster', icon: '⌛', at: 1000 },
+  { id: 'knight',     icon: '🛡️', at: 4000 },
+  { id: 'wizard',     icon: '🔮', at: 15000 },
+  { id: 'lord',       icon: '👑', at: 60000 },
+  { id: 'oracle',     icon: '🌙', at: 250000 },
+  { id: 'starlord',   icon: '🌟', at: 1e6 },
+  { id: 'eternal',    icon: '🌌', at: 5e6 },
+  { id: 'timegod',    icon: '⚡', at: 25e6 },
+  { id: 'infinite',   icon: '♾️', at: 1e8 },
 ];
 
 /** each rank tier adds this much permanent global income */
