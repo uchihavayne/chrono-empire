@@ -23,6 +23,7 @@ import {
   EVENT_STAGES, EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
 } from './event';
 import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from './wheel';
+import { CHALLENGES } from './challenge';
 import {
   SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
   seasonTierForXp, seasonTierXp, type SeasonTask,
@@ -165,6 +166,8 @@ export interface GameState {
   dayBoxes: number;
   daySpins: number;
   dayExped: number;
+  /** claimed Challenge Mode feats */
+  challengesDone: string[];
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -256,6 +259,7 @@ function migrate(save: any): any {
   for (const k of ['dayBought', 'dayEarned', 'dayBoxes', 'daySpins', 'dayExped']) {
     if (typeof save[k] !== 'number') save[k] = 0;
   }
+  if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
   save.version = VERSION;
   return save;
 }
@@ -354,6 +358,7 @@ function defaultState(): GameState {
     dayBoxes: 0,
     daySpins: 0,
     dayExped: 0,
+    challengesDone: [],
   };
 }
 
@@ -986,6 +991,53 @@ export class GameEngine {
     }
     if (started > 0) this.emit();
     return started;
+  }
+
+  // ─── Challenge Mode ───
+  private challengeValue(kind: string): number {
+    const s = this.state;
+    switch (kind) {
+      case 'total_owned': return GENERATORS.reduce((a, g) => a + s.generators[g.id].count, 0);
+      case 'own_single': return GENERATORS.reduce((m, g) => Math.max(m, s.generators[g.id].count), 0);
+      case 'managers': return GENERATORS.filter((g) => s.generators[g.id].hasManager).length;
+      case 'cards_single': return Object.values(s.cards).reduce((m, n) => Math.max(m, n), 0);
+      case 'rebirth': return s.rebirths;
+      case 'earn': return s.lifetimeCash;
+      case 'era': return s.erasUnlocked;
+      case 'exped_depth': return s.expBestDepth;
+      case 'ascend': return s.ascensions;
+      default: return 0;
+    }
+  }
+  challengeProgress(id: string): number {
+    const c = CHALLENGES.find((x) => x.id === id);
+    return c ? Math.min(this.challengeValue(c.kind), c.n) : 0;
+  }
+  challengeDone(id: string): boolean {
+    const c = CHALLENGES.find((x) => x.id === id);
+    return !!c && this.challengeValue(c.kind) >= c.n;
+  }
+  challengeClaimed(id: string): boolean { return this.state.challengesDone.includes(id); }
+
+  claimChallenge(id: string): boolean {
+    if (this.challengeClaimed(id) || !this.challengeDone(id)) return false;
+    const c = CHALLENGES.find((x) => x.id === id)!;
+    this.state.gems += c.reward.gems;
+    const pool = CARDS_BY_RARITY[c.reward.rarity];
+    for (let i = 0; i < c.reward.cards; i++) {
+      const pick = pool[Math.floor(Math.random() * pool.length)].id;
+      this.state.cards[pick] = (this.state.cards[pick] ?? 0) + 1;
+    }
+    this.state.challengesDone.push(id);
+    this.syncManagers();
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return true;
+  }
+  /** number of challenges done-but-unclaimed (for a badge) */
+  challengesClaimable(): number {
+    return CHALLENGES.filter((c) => this.challengeDone(c.id) && !this.challengeClaimed(c.id)).length;
   }
 
   /** count of idle un-managed generators (for the Collect All button) */

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, ACH_TIER_GEMS, ACH_TIER_MEDAL, achTier, DAILY_REWARDS } from '../game/data';
+import { CHALLENGES } from '../game/challenge';
 import { formatNumber } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
@@ -28,6 +29,7 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
   const importRef = useRef<HTMLTextAreaElement>(null);
   const [showImport, setShowImport] = useState(false);
   const [showAch, setShowAch] = useState(false);
+  const [showChal, setShowChal] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
@@ -120,6 +122,36 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
               );
             })}
           </div>
+        </>
+      )}
+
+      {/* challenge mode (collapsed) */}
+      <button className="collapse-head" onClick={() => setShowChal((v) => !v)}>
+        <span>🎯 {t('chal_title')}{engine.challengesClaimable() > 0 && <span className="chal-badge">{engine.challengesClaimable()}</span>}</span>
+        <span className="collapse-sub">{s.challengesDone.length}/{CHALLENGES.length} {showChal ? '▲' : '▼'}</span>
+      </button>
+      {showChal && (
+        <>
+          <p className="hint">{t('chal_hint')}</p>
+          {CHALLENGES.map((c) => {
+            const prog = engine.challengeProgress(c.id);
+            const done = engine.challengeDone(c.id);
+            const claimed = engine.challengeClaimed(c.id);
+            return (
+              <div className={`row-card${claimed ? ' done' : ''}`} key={c.id}>
+                <div className="icon-tile" style={{ fontSize: 24 }}>{c.icon}</div>
+                <div className="info">
+                  <div className="title">{t(`chal_${c.id}`)}</div>
+                  <div className="desc">🎁 💠{c.reward.gems} + {c.reward.cards} {t(`rarity_${c.reward.rarity}`)} · {formatNumber(prog, s.notation)}/{formatNumber(c.n, s.notation)}</div>
+                </div>
+                {claimed ? <span className="check">✓</span> : (
+                  <button className="action-btn" disabled={!done} onClick={() => { engine.claimChallenge(c.id); onToast(t('chal_claimed')); }}>
+                    {done ? t('sp_claim') : `${Math.round((prog / c.n) * 100)}%`}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </>
       )}
 
