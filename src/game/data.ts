@@ -288,6 +288,25 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 /** each achievement grants +2% global income */
 export const ACH_BONUS = 0.02;
 
+// ─── achievement tiers (bronze / silver / gold) ───
+export type AchTier = 1 | 2 | 3; // 1 bronze, 2 silver, 3 gold
+export const ACH_TIER_MEDAL: Record<AchTier, string> = { 1: '🥉', 2: '🥈', 3: '🥇' };
+export const ACH_TIER_GEMS: Record<AchTier, number> = { 1: 10, 2: 25, 3: 50 };
+
+/** difficulty tier of an achievement, derived from its kind + threshold */
+export function achTier(a: AchievementDef): AchTier {
+  switch (a.kind) {
+    case 'earn':    return a.n >= 1e25 ? 3 : a.n >= 1e15 ? 2 : 1;
+    case 'era':     return a.n >= 18 ? 3 : a.n >= 11 ? 2 : 1;
+    case 'rebirth': return a.n >= 10 ? 3 : a.n >= 3 ? 2 : 1;
+    case 'ads':     return a.n >= 100 ? 3 : a.n >= 25 ? 2 : 1;
+    case 'anomaly': return a.n >= 100 ? 3 : a.n >= 25 ? 2 : 1;
+    case 'managers':return a.n >= TOTAL_VENTURES ? 3 : 2;
+    case 'own':     return a.n >= 100 ? 2 : 1;
+    default:        return 1;
+  }
+}
+
 // ─── Quest chain (account-level, survives rebirth) ───
 // A single always-visible "next goal" that walks the player through all 9 eras,
 // teaches every system (managers, ads, anomalies, rebirth) and pays escalating rewards.

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ACHIEVEMENTS, DAILY_REWARDS } from '../game/data';
+import { ACHIEVEMENTS, ACH_TIER_GEMS, ACH_TIER_MEDAL, achTier, DAILY_REWARDS } from '../game/data';
 import { formatNumber } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
@@ -110,10 +110,12 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
           <div className="ach-grid">
             {ACHIEVEMENTS.map((a) => {
               const done = s.achievements.includes(a.id);
+              const tier = achTier(a);
               return (
-                <div key={a.id} className={`ach-card${done ? ' unlocked' : ''}`}>
-                  <span className="a-emoji">{done ? '🏆' : '🔒'}</span>
+                <div key={a.id} className={`ach-card tier-${tier}${done ? ' unlocked' : ''}`}>
+                  <span className="a-emoji">{done ? ACH_TIER_MEDAL[tier] : '🔒'}</span>
                   <div>{achText(t, a, s.notation)}</div>
+                  <span className="a-gems">💠 {ACH_TIER_GEMS[tier]}</span>
                 </div>
               );
             })}

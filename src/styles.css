@@ -1262,3 +1262,10 @@ select, .text-input {
 
 .sp-task .sp-task-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 5px 0 3px; }
 .sp-task .sp-task-bar span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffc63c, #ff9d1c); transition: width 0.3s; }
+
+/* achievement tiers (bronze/silver/gold) */
+.ach-card { position: relative; }
+.ach-card .a-gems { position: absolute; bottom: 4px; right: 6px; font-size: 10px; font-weight: 800; color: var(--text-dim); }
+.ach-card.tier-1.unlocked { border-color: rgba(205,127,50,0.6); box-shadow: 0 0 0 1px rgba(205,127,50,0.35); }
+.ach-card.tier-2.unlocked { border-color: rgba(192,192,210,0.6); box-shadow: 0 0 0 1px rgba(192,192,210,0.35); }
+.ach-card.tier-3.unlocked { border-color: rgba(255,200,60,0.7); box-shadow: 0 0 0 1px rgba(255,200,60,0.45); }

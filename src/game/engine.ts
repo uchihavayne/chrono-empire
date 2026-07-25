@@ -1,5 +1,5 @@
 import {
-  ACHIEVEMENTS, ACH_BONUS, AD_BOOST_BASE_HOURS, ANOMALY_LIFETIME_S, ANOMALY_MAX_GAP_S,
+  ACHIEVEMENTS, ACH_BONUS, ACH_TIER_GEMS, achTier, AD_BOOST_BASE_HOURS, ANOMALY_LIFETIME_S, ANOMALY_MAX_GAP_S,
   AD_GEM_REWARD, ANOMALY_MIN_GAP_S, CRYSTAL_AD_COOLDOWN_MIN, DAILY_REWARDS, ERAS, ERA_BASE,
   GEM_AD_COOLDOWN_MIN,
   EVENTS, EVENT_AD_EXTEND_S, EVENT_DURATION_S, EVENT_MAX_GAP_S, EVENT_MIN_GAP_S,
@@ -1308,7 +1308,7 @@ export class GameEngine {
       }
       if (done) {
         s.achievements.push(a.id);
-        s.gems += 15; // every achievement also grants Gems for card boxes
+        s.gems += ACH_TIER_GEMS[achTier(a)]; // bronze/silver/gold → 10/25/50 gems
       }
     }
   }
