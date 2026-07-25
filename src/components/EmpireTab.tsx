@@ -202,6 +202,16 @@ export function EmpireTab({
         ))}
       </div>
 
+      {/* QoL: bulk actions */}
+      <div className="qol-row">
+        <button className="qol-btn" onClick={() => engine.buyMaxAll(sel)}>⚡ {t('buy_max_all')}</button>
+        {engine.idleGeneratorCount() > 0 && (
+          <button className="qol-btn collect" onClick={() => { const n = engine.collectAllIdle(); if (n) onToast(t('collected_all', { n })); }}>
+            👆 {t('collect_all')}
+          </button>
+        )}
+      </div>
+
       {gens.map((g) => (
         <GeneratorCard key={g.id} g={g} amount={amount} />
       ))}

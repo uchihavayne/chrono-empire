@@ -1269,3 +1269,12 @@ select, .text-input {
 .ach-card.tier-1.unlocked { border-color: rgba(205,127,50,0.6); box-shadow: 0 0 0 1px rgba(205,127,50,0.35); }
 .ach-card.tier-2.unlocked { border-color: rgba(192,192,210,0.6); box-shadow: 0 0 0 1px rgba(192,192,210,0.35); }
 .ach-card.tier-3.unlocked { border-color: rgba(255,200,60,0.7); box-shadow: 0 0 0 1px rgba(255,200,60,0.45); }
+
+/* QoL bulk-action row */
+.qol-row { display: flex; gap: 8px; margin: 0 2px 10px; }
+.qol-btn {
+  flex: 1; padding: 9px; border-radius: 11px; border: 1px solid var(--card-border); cursor: pointer;
+  background: rgba(255,255,255,0.06); color: var(--text); font-family: inherit; font-weight: 800; font-size: 12.5px;
+}
+.qol-btn:active { transform: scale(0.97); }
+.qol-btn.collect { background: rgba(69,224,138,0.12); border-color: rgba(69,224,138,0.4); }

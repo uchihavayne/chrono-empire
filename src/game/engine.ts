@@ -956,6 +956,48 @@ export class GameEngine {
     this.emit();
   }
 
+  /** QoL: buy MAX of every business in an era, cheapest first (most units for the cash) */
+  buyMaxAll(era: number): void {
+    if (era >= this.state.erasUnlocked) return;
+    const gens = GENERATORS.filter((g) => g.era === era)
+      .sort((a, b) => this.buyCost(a.id, 1).cost - this.buyCost(b.id, 1).cost);
+    let boughtAny = false;
+    // a few passes so cash freed-up ordering keeps buying until nothing is affordable
+    for (let pass = 0; pass < 3; pass++) {
+      let passBought = false;
+      for (const g of gens) {
+        const { cost } = this.buyCost(g.id, 'max');
+        if (this.state.cash >= cost && this.buyCost(g.id, 'max').count >= 1 && this.state.cash >= this.buyCost(g.id, 1).cost) {
+          this.buyGenerator(g.id, 'max');
+          passBought = true; boughtAny = true;
+        }
+      }
+      if (!passBought) break;
+    }
+    if (boughtAny) this.emit();
+  }
+
+  /** QoL: kick off every idle un-managed generator at once */
+  collectAllIdle(): number {
+    let started = 0;
+    for (const g of GENERATORS) {
+      const gs = this.state.generators[g.id];
+      if (gs.count > 0 && !gs.hasManager && !gs.running) { this.runGenerator(g.id); started++; }
+    }
+    if (started > 0) this.emit();
+    return started;
+  }
+
+  /** count of idle un-managed generators (for the Collect All button) */
+  idleGeneratorCount(): number {
+    let n = 0;
+    for (const g of GENERATORS) {
+      const gs = this.state.generators[g.id];
+      if (gs.count > 0 && !gs.hasManager && !gs.running) n++;
+    }
+    return n;
+  }
+
   // Managers and profit boosts now come from CARDS, not cash. These stay as no-ops so any
   // legacy callers don't break; the Managers/Upgrades tabs are replaced by the Cards tab.
   buyManager(_genId: string): void { /* managers are card-gated now — see syncManagers() */ }
