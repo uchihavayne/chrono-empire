@@ -24,6 +24,7 @@ import {
 } from './event';
 import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from './wheel';
 import { CHALLENGES } from './challenge';
+import { BOSS_DURATION_S, BOSS_TARGET_SECONDS, BOSS_TIERS, bossReward } from './boss';
 import {
   SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
   seasonTierForXp, seasonTierXp, type SeasonTask,
@@ -168,6 +169,14 @@ export interface GameState {
   dayExped: number;
   /** claimed Challenge Mode feats */
   challengesDone: string[];
+  // ─── Time Keeper bosses ───
+  /** era thresholds whose boss has been defeated */
+  bossesDefeated: number[];
+  /** active fight: era threshold (0 = none), end time, cash earned SO FAR this fight, target */
+  bossThreshold: number;
+  bossEndsAt: number;
+  bossEarnedAmt: number;
+  bossTarget: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -260,6 +269,10 @@ function migrate(save: any): any {
     if (typeof save[k] !== 'number') save[k] = 0;
   }
   if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
+  if (!Array.isArray(save.bossesDefeated)) save.bossesDefeated = [];
+  for (const k of ['bossThreshold', 'bossEndsAt', 'bossEarnedAmt', 'bossTarget']) {
+    if (typeof save[k] !== 'number') save[k] = 0;
+  }
   save.version = VERSION;
   return save;
 }
@@ -359,6 +372,11 @@ function defaultState(): GameState {
     daySpins: 0,
     dayExped: 0,
     challengesDone: [],
+    bossesDefeated: [],
+    bossThreshold: 0,
+    bossEndsAt: 0,
+    bossEarnedAmt: 0,
+    bossTarget: 0,
   };
 }
 
@@ -826,6 +844,7 @@ export class GameEngine {
   private tick(dt: number): void {
     // Event World tokens accrue continuously (event businesses are auto-producing)
     this.accrueEvent(dt);
+    if (this.state.bossThreshold > 0) this.checkBoss();
     for (const g of GENERATORS) {
       const gs = this.state.generators[g.id];
       if (gs.count === 0) continue;
@@ -913,6 +932,7 @@ export class GameEngine {
     this.state.lifetimeCash += amount;
     this.state.runCash += amount;
     this.state.dayEarned += amount;
+    if (this.state.bossThreshold > 0) this.state.bossEarnedAmt += amount; // Time Keeper fight
   }
 
   // ─── player actions ───
@@ -992,6 +1012,62 @@ export class GameEngine {
     if (started > 0) this.emit();
     return started;
   }
+
+  // ─── Time Keeper bosses ───
+  /** transient: era threshold whose "you won!" celebration is pending (never saved) */
+  bossWon = 0;
+
+  /** the lowest reached-but-undefeated boss threshold, or null */
+  availableBoss(): number | null {
+    for (const th of BOSS_TIERS) {
+      if (this.state.erasUnlocked >= th && !this.state.bossesDefeated.includes(th)) return th;
+    }
+    return null;
+  }
+  bossActive(): boolean { return this.state.bossThreshold > 0 && Date.now() < this.state.bossEndsAt; }
+  bossTimeLeftMs(): number { return Math.max(0, this.state.bossEndsAt - Date.now()); }
+  bossEarned(): number { return this.state.bossEarnedAmt; }
+
+  startBoss(): boolean {
+    const th = this.availableBoss();
+    if (th === null || this.bossActive()) return false;
+    this.state.bossThreshold = th;
+    this.state.bossEndsAt = Date.now() + BOSS_DURATION_S * 1000;
+    this.state.bossEarnedAmt = 0;
+    this.state.bossTarget = Math.max(this.totalIncomePerSec() * BOSS_TARGET_SECONDS, this.state.cash * 0.5, 1000);
+    if (this.state.sfxOn) audio.sfxAnomaly();
+    this.save();
+    this.emit();
+    return true;
+  }
+
+  /** called from the tick: resolve a win (target reached) or a loss (time up) */
+  private checkBoss(): void {
+    if (this.state.bossThreshold <= 0) return;
+    const th = this.state.bossThreshold;
+    if (this.bossEarned() >= this.state.bossTarget) {
+      // WIN
+      const r = bossReward(th);
+      this.state.gems += r.gems;
+      const pool = CARDS_BY_RARITY['legendary'];
+      for (let i = 0; i < r.cards; i++) {
+        const pick = pool[Math.floor(Math.random() * pool.length)].id;
+        this.state.cards[pick] = (this.state.cards[pick] ?? 0) + 1;
+      }
+      this.state.bossesDefeated.push(th);
+      this.state.bossThreshold = 0;
+      this.bossWon = th;
+      this.syncManagers();
+      if (this.state.sfxOn) audio.sfxRebirth();
+      this.save();
+    } else if (Date.now() >= this.state.bossEndsAt) {
+      // time up → lose (can retry)
+      this.state.bossThreshold = 0;
+      if (this.state.sfxOn) audio.sfxError();
+      this.save();
+    }
+  }
+  clearBossWon(): void { this.bossWon = 0; this.emit(); }
 
   // ─── Challenge Mode ───
   private challengeValue(kind: string): number {

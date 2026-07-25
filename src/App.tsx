@@ -23,6 +23,8 @@ import { ExpeditionMode } from './components/ExpeditionMode';
 import { EventWorld } from './components/EventWorld';
 import { WheelModal } from './components/WheelModal';
 import { SeasonPass } from './components/SeasonPass';
+import { BossModal } from './components/BossModal';
+import { bossReward } from './game/boss';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -47,6 +49,7 @@ export default function App() {
   const [intro, setIntro] = useState(true);
   const [showWheel, setShowWheel] = useState(false);
   const [showSeason, setShowSeason] = useState(false);
+  const [showBoss, setShowBoss] = useState(false);
   const [tab, setTab] = useState<Tab>('empire');
   // the era the player is currently VIEWING (drives backdrop + accent theme). Income
   // still uses the highest unlocked era; only the visuals follow what you browse.
@@ -251,6 +254,20 @@ export default function App() {
               : <span className="festival-go">{t('ev_enter')} ›</span>}
           </button>
 
+          {/* Time Keeper boss — appears when one is available or a fight is running */}
+          {(engine.availableBoss() !== null || engine.bossActive()) && (
+            <button className="boss-banner" onClick={() => setShowBoss(true)}>
+              <span className="festival-emblem">⏳</span>
+              <div className="festival-mid">
+                <div className="festival-name">{t('boss_title')}</div>
+                <div className="festival-sub">
+                  {engine.bossActive() ? t('boss_fighting') : t('boss_era', { n: engine.availableBoss() ?? 0 })}
+                </div>
+              </div>
+              <span className="boss-go">⚔️</span>
+            </button>
+          )}
+
           {/* Event World entry — a limited-time parallel world */}
           <button className="festival-banner" onClick={() => engine.openEventWorld()}>
             <span className="festival-emblem">🎪</span>
@@ -403,6 +420,22 @@ export default function App() {
 
           {/* Season Pass */}
           {showSeason && <SeasonPass onClose={() => setShowSeason(false)} />}
+
+          {/* Time Keeper boss */}
+          {showBoss && <BossModal onClose={() => setShowBoss(false)} />}
+
+          {/* boss victory celebration */}
+          {engine.bossWon > 0 && (
+            <Modal>
+              <div className="m-icon">🏆</div>
+              <h3>{t('boss_win_t')}</h3>
+              <p>{t('boss_win_d', { n: engine.bossWon })}</p>
+              <div className="m-value">💠 +{bossReward(engine.bossWon).gems}</div>
+              <div className="m-actions">
+                <button className="m-green" onClick={() => engine.clearBossWon()}>{t('collect')}</button>
+              </div>
+            </Modal>
+          )}
 
           {/* event cycle ended → gems paid out */}
           {s.eventPayoutGems > 0 && (

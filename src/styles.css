@@ -1293,3 +1293,25 @@ select, .text-input {
   padding: 0 5px; margin-left: 6px; border-radius: 9px; background: #ff4d6d; color: #fff;
   font-size: 11px; font-weight: 800; vertical-align: middle;
 }
+
+/* ─── Time Keeper boss ─── */
+.boss-banner {
+  display: flex; align-items: center; gap: 12px; width: calc(100% - 24px); margin: 4px 12px 0;
+  padding: 11px 14px; border-radius: 14px; cursor: pointer; font-family: inherit; color: var(--text);
+  text-align: left; position: relative; z-index: 1;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(255,90,110,0.32), transparent 60%),
+    linear-gradient(120deg, #3a1224, #6a1f38 55%, #b03a2a);
+  border: 1px solid rgba(255,120,120,0.55);
+  box-shadow: 0 4px 18px rgba(180,50,50,0.4); animation: festivalPulse 1.6s ease-in-out infinite;
+}
+.boss-banner:active { transform: scale(0.99); }
+.boss-go { font-size: 22px; }
+.boss-modal { text-align: center; }
+.boss-icon { font-size: 54px; filter: drop-shadow(0 4px 14px rgba(255,90,110,0.5)); }
+.boss-timer { font-size: 22px; font-weight: 800; color: #ff5c74; margin: 4px 0; }
+.boss-bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 6px 0; }
+.boss-bar span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #ff9d1c, #45e08a); transition: width 0.2s; }
+.boss-prog { font-size: 14px; font-weight: 800; color: #8fd8ff; }
+.boss-desc { color: var(--text-dim); font-size: 14px; line-height: 1.5; margin: 6px 0; font-weight: 600; }
+.boss-reward { font-size: 18px; font-weight: 800; color: #ffd66a; margin: 8px 0; }
