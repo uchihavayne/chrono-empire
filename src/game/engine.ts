@@ -422,6 +422,8 @@ function defaultState(): GameState {
 export interface OfflineReport {
   seconds: number;
   cashEarned: number;
+  /** Event World tokens accrued while away (side world — only set if any were earned) */
+  eventTokens?: number;
 }
 
 type Listener = () => void;
@@ -1478,17 +1480,23 @@ export class GameEngine {
     const now = Date.now();
     const rawSeconds = (now - this.state.lastSeen) / 1000;
     this.state.lastSeen = now;
-    // Event World offline: accrue tokens (capped, no popup — it's a side world)
-    if (rawSeconds >= 60) this.accrueEvent(Math.min(rawSeconds, EVENT_OFFLINE_CAP_H * 3600));
+    // Event World offline: accrue tokens (capped). Capture the gain so the welcome-back summary
+    // can report festival earnings alongside the main game.
+    let eventTokens = 0;
+    if (rawSeconds >= 60) {
+      const before = this.state.eventTokens;
+      this.accrueEvent(Math.min(rawSeconds, EVENT_OFFLINE_CAP_H * 3600));
+      eventTokens = this.state.eventTokens - before;
+    }
     this.state.eventLastSeen = now;
     if (rawSeconds < 60) return;
     const cap = this.offlineCapHours() * 3600;
     const seconds = Math.min(rawSeconds, cap);
     const income = this.totalIncomePerSec();
-    if (income <= 0) return;
-    const cashEarned = income * seconds * this.investorPerk('offline'); // Nefertari boosts offline
-    this.earn(cashEarned);
-    this.offlineReport = { seconds, cashEarned };
+    const cashEarned = income > 0 ? income * seconds * this.investorPerk('offline') : 0; // Nefertari boosts offline
+    if (cashEarned > 0) this.earn(cashEarned);
+    if (cashEarned <= 0 && eventTokens <= 0) return;
+    this.offlineReport = { seconds, cashEarned, eventTokens: eventTokens > 0 ? eventTokens : undefined };
   }
 
   claimOfflineDouble(): void {

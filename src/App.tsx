@@ -340,12 +340,21 @@ export default function App() {
               <div className="m-icon">🌙</div>
               <h3>{t('offline_title')}</h3>
               <p>{t('offline_desc', { t: formatDuration(engine.offlineReport.seconds) })}</p>
-              <div className="m-value">💰 {formatNumber(engine.offlineReport.cashEarned, s.notation)}</div>
+              {engine.offlineReport.cashEarned > 0 && (
+                <div className="m-value">💰 {formatNumber(engine.offlineReport.cashEarned, s.notation)}</div>
+              )}
+              {engine.offlineReport.eventTokens != null && (
+                <div className="m-value" style={{ fontSize: 17, opacity: 0.92 }}>
+                  🎟️ {formatNumber(engine.offlineReport.eventTokens, s.notation)} <span style={{ fontSize: 12, opacity: 0.7 }}>{t('offline_event')}</span>
+                </div>
+              )}
               <div className="m-actions">
                 <button className="m-secondary" onClick={() => engine.dismissOffline()}>{t('collect')}</button>
-                <button className="m-green" onClick={() => watchAd(() => engine.claimOfflineDouble())}>
-                  {t('offline_double')}
-                </button>
+                {engine.offlineReport.cashEarned > 0 && (
+                  <button className="m-green" onClick={() => watchAd(() => engine.claimOfflineDouble())}>
+                    {t('offline_double')}
+                  </button>
+                )}
               </div>
             </Modal>
           )}
