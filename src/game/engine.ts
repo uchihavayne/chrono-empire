@@ -1524,19 +1524,21 @@ export class GameEngine {
     this.state.dailyClaimable = true;
   }
 
-  claimDaily(): { type: 'cash' | 'crystal'; value: number } | null {
+  claimDaily(): { type: 'cash' | 'crystal' | 'gems' | 'card'; value: number } | null {
     if (!this.state.dailyClaimable) return null;
     const day = this.state.dailyStreak % DAILY_REWARDS.length;
     const def = DAILY_REWARDS[day];
-    let value: number;
+    let value = def.amount;
     if (def.type === 'cash') {
-      const income = Math.max(this.totalIncomePerSec(), 1);
-      value = income * def.amount * 60;
+      value = Math.max(this.totalIncomePerSec(), 1) * def.amount * 60;
       this.earn(value);
-    } else {
-      value = def.amount;
+    } else if (def.type === 'crystal') {
       this.state.crystals += value;
       this.state.totalCrystalsEarned += value;
+    } else if (def.type === 'gems') {
+      this.state.gems += value;
+    } else if (def.type === 'card') {
+      this.grantCards(rollBox('uncommon').slice(0, value));
     }
     this.state.dailyStreak++;
     this.state.lastDailyDate = this.todayStr();

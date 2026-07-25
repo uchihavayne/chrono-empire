@@ -568,13 +568,21 @@ export const ANOMALY_MIN_GAP_S = 90;
 export const ANOMALY_MAX_GAP_S = 240;
 export const ANOMALY_LIFETIME_S = 14;
 
-export interface DailyDef { type: 'cash' | 'crystal'; amount: number }
+export interface DailyDef { type: 'cash' | 'crystal' | 'gems' | 'card'; amount: number }
+// 30-day login calendar — small daily rewards with bigger gem milestones each week and a card
+// finale on day 30. Streak cycles every 30 days.
 export const DAILY_REWARDS: DailyDef[] = [
-  { type: 'cash', amount: 30 },
-  { type: 'cash', amount: 60 },
-  { type: 'crystal', amount: 5 },
-  { type: 'cash', amount: 120 },
-  { type: 'crystal', amount: 10 },
-  { type: 'cash', amount: 240 },
-  { type: 'crystal', amount: 25 },
+  { type: 'cash', amount: 30 }, { type: 'crystal', amount: 5 }, { type: 'cash', amount: 60 },
+  { type: 'gems', amount: 5 }, { type: 'crystal', amount: 8 }, { type: 'cash', amount: 120 },
+  { type: 'gems', amount: 20 }, // week 1
+  { type: 'cash', amount: 150 }, { type: 'crystal', amount: 12 }, { type: 'gems', amount: 8 },
+  { type: 'cash', amount: 200 }, { type: 'crystal', amount: 15 }, { type: 'gems', amount: 10 },
+  { type: 'gems', amount: 40 }, // week 2
+  { type: 'cash', amount: 300 }, { type: 'crystal', amount: 20 }, { type: 'gems', amount: 12 },
+  { type: 'cash', amount: 400 }, { type: 'crystal', amount: 25 }, { type: 'gems', amount: 15 },
+  { type: 'gems', amount: 60 }, // week 3
+  { type: 'cash', amount: 500 }, { type: 'crystal', amount: 30 }, { type: 'gems', amount: 15 },
+  { type: 'cash', amount: 600 }, { type: 'crystal', amount: 35 }, { type: 'gems', amount: 18 },
+  { type: 'cash', amount: 800 }, { type: 'crystal', amount: 40 },
+  { type: 'card', amount: 3 }, // day 30 finale
 ];

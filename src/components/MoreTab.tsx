@@ -77,10 +77,14 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
     onToast(t('shop_restored'));
   };
 
+  const dailyEmoji = (type: string) => type === 'cash' ? '💰' : type === 'crystal' ? '💎' : type === 'gems' ? '💠' : '🃏';
   const claim = () => {
     const r = engine.claimDaily();
     if (r) {
-      onToast(r.type === 'cash' ? `+${formatNumber(r.value, s.notation)} 💰` : `+${r.value} 💎`);
+      const label = r.type === 'cash' ? `+${formatNumber(r.value, s.notation)} 💰`
+        : r.type === 'crystal' ? `+${r.value} 💎`
+        : r.type === 'gems' ? `+${r.value} 💠` : `+${r.value} 🃏`;
+      onToast(label);
     }
   };
 
@@ -88,13 +92,14 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
 
   return (
     <div>
-      {/* daily reward */}
-      <div className="section-title">🎁 {t('daily_title')}</div>
+      {/* daily login calendar */}
+      <div className="section-title">🎁 {t('daily_title')} <span className="lb-week">🔥 {t('daily_streak', { n: s.dailyStreak })}</span></div>
       <div className="daily-grid">
         {DAILY_REWARDS.map((d, i) => (
-          <div key={i} className={`daily-cell${i < dayIdx ? ' past' : i === dayIdx ? ' today' : ''}`}>
-            <span className="d-emoji">{d.type === 'cash' ? '💰' : '💎'}</span>
-            {t('daily_day', { n: i + 1 })}
+          <div key={i} className={`daily-cell${i < dayIdx ? ' past' : i === dayIdx ? ' today' : ''}${d.type === 'gems' || d.type === 'card' ? ' milestone' : ''}`}>
+            <span className="d-emoji">{dailyEmoji(d.type)}</span>
+            <span className="d-amt">{d.type === 'cash' ? '' : d.amount}</span>
+            <span className="d-day">{i + 1}</span>
           </div>
         ))}
       </div>
