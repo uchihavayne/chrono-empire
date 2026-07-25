@@ -26,6 +26,7 @@ import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from '
 import { CHALLENGES } from './challenge';
 import { BOSS_DURATION_S, BOSS_TARGET_SECONDS, BOSS_TIERS, bossReward } from './boss';
 import { SKIN_BY_ID } from './skins';
+import { EON_UPGRADE_BY_ID, eonUpgradeCost } from './eon';
 import {
   SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
   seasonTierForXp, seasonTierXp, type SeasonTask,
@@ -106,6 +107,8 @@ export interface GameState {
   iapOwned: string[];
   /** second prestige: permanent Eon Crystals (survive ascension) */
   eons: number;
+  /** permanent Eon Upgrade levels (never reset) */
+  eonUpgrades: Record<string, number>;
   /** number of ascensions performed */
   ascensions: number;
   /** totalCrystalsEarned snapshot at the last ascension → epoch crystals = total − this */
@@ -276,6 +279,7 @@ function migrate(save: any): any {
     if (typeof save[k] !== 'number') save[k] = 0;
   }
   if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
+  if (!save.eonUpgrades || typeof save.eonUpgrades !== 'object') save.eonUpgrades = {};
   if (typeof save.skin !== 'string') save.skin = 'default';
   if (!Array.isArray(save.ownedSkins)) save.ownedSkins = ['default'];
   if (!save.ownedSkins.includes('default')) save.ownedSkins.push('default');
@@ -347,6 +351,7 @@ function defaultState(): GameState {
     starterPack: false,
     iapOwned: [],
     eons: 0,
+    eonUpgrades: {},
     ascensions: 0,
     ascensionStartCrystals: 0,
     tutorialDone: false,
@@ -784,6 +789,7 @@ export class GameEngine {
     m *= this.investorPerk('global');
     m *= 1 + this.relicLevel('relic_income') * RELIC_BY_ID['relic_income'].value; // expedition relic
     m *= 1 + this.skillLevel('crit_income') * 0.04; // Critical Income skill
+    m *= 1 + this.eonLevel('eon_power') * EON_UPGRADE_BY_ID['eon_power'].value; // Eon Upgrade
     if (this.state.starterPack) m *= 2; // permanent IAP boost
     if (this.state.vip) m *= 2; // VIP subscription perk
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
@@ -817,7 +823,8 @@ export class GameEngine {
 
   cycleSpeedMult(): number {
     return 1 + this.skillLevel('fast_cycles') * 0.1 + this.investorSpeedAdd()
-      + this.relicLevel('relic_speed') * RELIC_BY_ID['relic_speed'].value;
+      + this.relicLevel('relic_speed') * RELIC_BY_ID['relic_speed'].value
+      + this.eonLevel('eon_speed') * EON_UPGRADE_BY_ID['eon_speed'].value;
   }
 
   /** effective seconds per cycle for a venture, after global speed + owned-count milestones */
@@ -828,7 +835,8 @@ export class GameEngine {
 
   costDiscount(): number {
     return Math.max(0.1, 1 - this.skillLevel('cheap_deals') * 0.03 - this.investorCostCut()
-      - this.relicLevel('relic_cost') * RELIC_BY_ID['relic_cost'].value);
+      - this.relicLevel('relic_cost') * RELIC_BY_ID['relic_cost'].value
+      - this.eonLevel('eon_cost') * EON_UPGRADE_BY_ID['eon_cost'].value);
   }
 
   /** revenue for one full cycle of a generator (all units) */
@@ -856,7 +864,8 @@ export class GameEngine {
 
   offlineCapHours(): number {
     return OFFLINE_CAP_BASE_HOURS + this.skillLevel('offline_cap') * 4
-      + this.relicLevel('relic_offline') * RELIC_BY_ID['relic_offline'].value;
+      + this.relicLevel('relic_offline') * RELIC_BY_ID['relic_offline'].value
+      + this.eonLevel('eon_offline') * EON_UPGRADE_BY_ID['eon_offline'].value;
   }
 
   adBoostHours(): number {
@@ -1304,9 +1313,10 @@ export class GameEngine {
   }
 
   pendingCrystals(): number {
-    const base = crystalsForRun(this.state.runCash);
+    let base = crystalsForRun(this.state.runCash);
+    base *= 1 + this.eonLevel('eon_prestige') * EON_UPGRADE_BY_ID['eon_prestige'].value; // Eon Upgrade
     if (this.state.eons > 0) return Math.floor(base * (1 + this.state.eons * EON_CRYSTAL_BONUS));
-    return base;
+    return Math.floor(base);
   }
 
   canRebirth(): boolean {
@@ -1333,6 +1343,24 @@ export class GameEngine {
   }
   eonIncomeBonus(): number {
     return this.state.eons * EON_INCOME_BONUS;
+  }
+
+  // ─── Eon Upgrades (permanent, bought with eons) ───
+  eonLevel(id: string): number { return this.state.eonUpgrades?.[id] ?? 0; }
+  eonUpgradeCostFor(id: string): number { return eonUpgradeCost(EON_UPGRADE_BY_ID[id], this.eonLevel(id)); }
+  buyEonUpgrade(id: string): boolean {
+    const def = EON_UPGRADE_BY_ID[id];
+    if (!def) return false;
+    const lvl = this.eonLevel(id);
+    if (lvl >= def.maxLevel) return false;
+    const cost = this.eonUpgradeCostFor(id);
+    if (this.state.eons < cost) return false;
+    this.state.eons -= cost;
+    this.state.eonUpgrades[id] = lvl + 1;
+    if (this.state.sfxOn) audio.sfxManager();
+    this.save();
+    this.emit();
+    return true;
   }
 
   ascend(): void {

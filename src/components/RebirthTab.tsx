@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ASCEND_MIN_REBIRTHS, ERA_IDS, INVESTORS, SKILLS, skillCost, type InvestorPerk } from '../game/data';
 import { EXP_UNLOCK_ERAS, RELICS, relicCost } from '../game/expedition';
+import { EON_UPGRADES } from '../game/eon';
 import { formatNumber } from '../game/format';
 import { useGame, useT, useWatchAd, type TFunc } from '../hooks';
 import { ConfirmModal } from './Modals';
@@ -141,6 +142,36 @@ export function RebirthTab() {
             </p>
           )}
         </div>
+      )}
+
+      {/* Eon Upgrades — permanent, bought with Eon Crystals (shown once you have eons) */}
+      {s.eons > 0 && (
+        <>
+          <div className="section-title">🌌 {t('eon_shop_title')}</div>
+          <p className="hint">{t('eon_shop_hint')}</p>
+          {EON_UPGRADES.map((u) => {
+            const lvl = engine.eonLevel(u.id);
+            const maxed = lvl >= u.maxLevel;
+            const cost = engine.eonUpgradeCostFor(u.id);
+            return (
+              <div className={`row-card eon-card${maxed ? ' done' : ''}`} key={u.id}>
+                <div className="icon-tile">{u.icon}</div>
+                <div className="info">
+                  <div className="title">{t(`${u.id}_n`)} · {t('level', { n: lvl })}</div>
+                  <div className="desc">{t(`${u.id}_d`)}</div>
+                </div>
+                {maxed ? (
+                  <span className="check">{t('max_lvl')}</span>
+                ) : (
+                  <button className="action-btn" style={{ background: 'linear-gradient(180deg,#8fe0ff,#2a86c8)', color: '#04222e' }}
+                    disabled={s.eons < cost} onClick={() => engine.buyEonUpgrade(u.id)}>
+                    🌌 {cost}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </>
       )}
 
       <div className="section-title"><GemIcon size={19} /> {t('skills_title')}</div>
