@@ -31,8 +31,8 @@ import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
 import {
-  BOX_BY_ID, cardManagerUnlocked, cardProfitMult, FREE_BOX_PER_DAY, MANAGER_CARD_REQ,
-  MAX_BOXES_PER_DAY, rollBox,
+  BOX_BY_ID, CARD_BY_ID, CARDS_BY_RARITY, FUSION_COST, cardManagerUnlocked, cardProfitMult,
+  FREE_BOX_PER_DAY, MANAGER_CARD_REQ, MAX_BOXES_PER_DAY, nextRarity, rollBox,
 } from './cards';
 
 export interface GeneratorState {
@@ -1053,6 +1053,28 @@ export class GameEngine {
     if (this.state.sfxOn) audio.sfxReward();
     this.save(); this.emit();
     return ids;
+  }
+
+  /** fusion is offered only for SURPLUS cards, so it can never drop a manager/tier you rely on */
+  canFuse(cardId: string): boolean {
+    return this.cardCount(cardId) - FUSION_COST >= MANAGER_CARD_REQ;
+  }
+
+  /** fuse 5 copies of a card → 1 random card of the next rarity up. Returns the new card id. */
+  fuseCard(cardId: string): string | null {
+    if (!this.canFuse(cardId)) return null;
+    const def = CARD_BY_ID[cardId];
+    if (!def) return null;
+    const targetRarity = nextRarity(def.rarity);
+    const pool = CARDS_BY_RARITY[targetRarity];
+    const pick = pool[Math.floor(Math.random() * pool.length)].id;
+    this.state.cards[cardId] -= FUSION_COST;
+    this.state.cards[pick] = (this.state.cards[pick] ?? 0) + 1;
+    this.syncManagers();
+    if (this.state.sfxOn) audio.sfxManager();
+    this.save();
+    this.emit();
+    return pick;
   }
 
   /** open a gem-bought box → drawn card ids, or null if not enough gems */

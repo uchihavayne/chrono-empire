@@ -45,6 +45,14 @@ export const CARDS_BY_RARITY: Record<Rarity, CardDef[]> = {
   epic: CARDS.filter((c) => c.rarity === 'epic'),
   legendary: CARDS.filter((c) => c.rarity === 'legendary'),
 };
+export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
+
+// ─── card fusion: 5 copies of a card → 1 random card of the next rarity up ───
+export const FUSION_COST = 5;
+export function nextRarity(r: Rarity): Rarity {
+  const i = RARITIES.indexOf(r);
+  return RARITIES[Math.min(i + 1, RARITIES.length - 1)];
+}
 
 // ─── collection → rewards ───
 // Card-count thresholds and the CUMULATIVE profit multiplier reached at each. Deliberately

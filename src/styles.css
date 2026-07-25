@@ -1278,3 +1278,11 @@ select, .text-input {
 }
 .qol-btn:active { transform: scale(0.97); }
 .qol-btn.collect { background: rgba(69,224,138,0.12); border-color: rgba(69,224,138,0.4); }
+
+/* card fusion button */
+.card-fuse {
+  margin-top: 6px; width: 100%; padding: 5px; border-radius: 9px; cursor: pointer;
+  border: 1px solid rgba(141,107,255,0.5); background: rgba(141,107,255,0.18);
+  color: #c4b0ff; font-family: inherit; font-weight: 800; font-size: 11px;
+}
+.card-fuse:active { transform: scale(0.96); }

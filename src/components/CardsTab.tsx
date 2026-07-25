@@ -128,6 +128,14 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
                   {managed ? <span className="card-auto">⚙️ ×{mult.toFixed(1)}</span> : <span className="card-lock">🔒 {n}/{MANAGER_CARD_REQ}</span>}
                 </div>
                 {next && <div className="card-next">{t('card_next', { n: next })}</div>}
+                {engine.canFuse(c.id) && (
+                  <button
+                    className="card-fuse"
+                    onClick={() => { const got = engine.fuseCard(c.id); if (got) onToast(t('fuse_got', { name: t(`gen_${got}`) })); }}
+                  >
+                    ✨ {t('fuse')}
+                  </button>
+                )}
               </div>
             );
           })}
