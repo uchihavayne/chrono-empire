@@ -25,6 +25,7 @@ import {
 import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from './wheel';
 import { CHALLENGES } from './challenge';
 import { BOSS_DURATION_S, BOSS_TARGET_SECONDS, BOSS_TIERS, bossReward } from './boss';
+import { SKIN_BY_ID } from './skins';
 import {
   SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
   seasonTierForXp, seasonTierXp, type SeasonTask,
@@ -169,6 +170,9 @@ export interface GameState {
   dayExped: number;
   /** claimed Challenge Mode feats */
   challengesDone: string[];
+  /** cosmetic skins: selected id + owned ids */
+  skin: string;
+  ownedSkins: string[];
   // ─── Time Keeper bosses ───
   /** era thresholds whose boss has been defeated */
   bossesDefeated: number[];
@@ -269,6 +273,9 @@ function migrate(save: any): any {
     if (typeof save[k] !== 'number') save[k] = 0;
   }
   if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
+  if (typeof save.skin !== 'string') save.skin = 'default';
+  if (!Array.isArray(save.ownedSkins)) save.ownedSkins = ['default'];
+  if (!save.ownedSkins.includes('default')) save.ownedSkins.push('default');
   if (!Array.isArray(save.bossesDefeated)) save.bossesDefeated = [];
   for (const k of ['bossThreshold', 'bossEndsAt', 'bossEarnedAmt', 'bossTarget']) {
     if (typeof save[k] !== 'number') save[k] = 0;
@@ -372,6 +379,8 @@ function defaultState(): GameState {
     daySpins: 0,
     dayExped: 0,
     challengesDone: [],
+    skin: 'default',
+    ownedSkins: ['default'],
     bossesDefeated: [],
     bossThreshold: 0,
     bossEndsAt: 0,
@@ -1011,6 +1020,28 @@ export class GameEngine {
     }
     if (started > 0) this.emit();
     return started;
+  }
+
+  // ─── cosmetic skins ───
+  buySkin(id: string): boolean {
+    const def = SKIN_BY_ID[id];
+    if (!def || this.state.ownedSkins.includes(id) || this.state.gems < def.cost) return false;
+    this.state.gems -= def.cost;
+    this.state.ownedSkins.push(id);
+    this.state.skin = id; // auto-equip on purchase
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return true;
+  }
+  setSkin(id: string): void {
+    if (!this.state.ownedSkins.includes(id)) return;
+    this.state.skin = id;
+    this.save();
+    this.emit();
+  }
+  skinAccent(): Record<string, string> | null {
+    return (SKIN_BY_ID[this.state.skin] ?? SKIN_BY_ID['default']).accent;
   }
 
   // ─── Time Keeper bosses ───

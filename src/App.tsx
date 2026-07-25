@@ -174,7 +174,7 @@ export default function App() {
   return (
     <TContext.Provider value={t}>
       <AdContext.Provider value={watchAd}>
-        <div className={`app ${era.theme}${hasStars}`}>
+        <div className={`app ${era.theme}${hasStars}`} style={engine.skinAccent() as React.CSSProperties | undefined}>
           {/* per-era atmospheric backdrop */}
           <EraBackdrop era={era.id} />
 

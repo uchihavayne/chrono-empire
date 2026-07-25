@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, ACH_TIER_GEMS, ACH_TIER_MEDAL, achTier, DAILY_REWARDS } from '../game/data';
 import { CHALLENGES } from '../game/challenge';
+import { SKINS } from '../game/skins';
 import { formatNumber } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
@@ -282,6 +283,27 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         <option value="suffix">{t('notation_suffix')}</option>
         <option value="scientific">{t('notation_sci')}</option>
       </select>
+
+      {/* cosmetic skins */}
+      <div className="section-title">🎨 {t('skins_title')}</div>
+      <div className="skin-grid">
+        {SKINS.map((sk) => {
+          const owned = s.ownedSkins.includes(sk.id);
+          const active = s.skin === sk.id;
+          return (
+            <button
+              key={sk.id}
+              className={`skin-cell${active ? ' active' : ''}`}
+              style={sk.accent as React.CSSProperties | undefined}
+              onClick={() => owned ? engine.setSkin(sk.id) : engine.buySkin(sk.id)}
+            >
+              <span className="skin-swatch">{sk.icon}</span>
+              <span className="skin-name">{t(`skin_${sk.id}`)}</span>
+              <span className="skin-tag">{active ? '✓' : owned ? t('skin_use') : `💠${sk.cost}`}</span>
+            </button>
+          );
+        })}
+      </div>
       <div className="row-card" style={{ marginTop: 4 }}>
         <div className="icon-tile">🎵</div>
         <div className="info">
