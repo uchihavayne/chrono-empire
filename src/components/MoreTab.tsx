@@ -6,6 +6,7 @@ import { formatNumber, formatDuration } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
 import { ConfirmModal } from './Modals';
+import { StatGraph } from './StatGraph';
 import { PRODUCTS, shopVisible } from '../services/iap';
 import { purchase as iapPurchase, restore as iapRestore } from '../services/iap';
 import type { LbEntry } from '../services/leaderboard';
@@ -168,6 +169,8 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
       </button>
       {showStats && (
         <>
+          <StatGraph id="income" label={`📈 ${t('stat_graph_income')}`} data={s.incomeHistory} color="#45e08a" notation={s.notation} />
+          <StatGraph id="crystals" label={`💎 ${t('stat_graph_crystals')}`} data={s.crystalHistory} color="#8fd8ff" notation={s.notation} />
           <div className="stat-row"><span>{t('stat_lifetime')}</span><span>{formatNumber(s.lifetimeCash, s.notation)}</span></div>
           <div className="stat-row"><span>{t('stat_run')}</span><span>{formatNumber(s.runCash, s.notation)}</span></div>
           <div className="stat-row"><span>{t('time_travels', { n: '' }).replace(':', '').trim()}</span><span>{s.rebirths}</span></div>

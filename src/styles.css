@@ -593,6 +593,18 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 13px; font-weight: 600;
 }
 .stat-row span:last-child { font-weight: 800; color: var(--gold); }
+/* stats history graphs (A7) */
+.stat-graph {
+  border: 1px solid var(--card-border); border-radius: 12px; background: var(--card);
+  padding: 8px 10px 4px; margin: 8px 0;
+}
+.stat-graph .sg-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 2px;
+}
+.stat-graph .sg-cur { font-size: 13px; font-weight: 800; }
+.stat-graph .sg-svg { display: block; width: 100%; height: 60px; }
+.stat-graph.empty .sg-wait { text-align: center; color: var(--text-dim); font-size: 18px; letter-spacing: 3px; padding: 14px 0 10px; opacity: 0.5; }
 select, .text-input {
   width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--card-border);
   background: #10131f; color: var(--text); font-size: 14px; margin-bottom: 8px;

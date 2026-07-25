@@ -193,6 +193,11 @@ export interface GameState {
   bossEndsAt: number;
   bossEarnedAmt: number;
   bossTarget: number;
+  // ─── stats history (A7) ───
+  /** rolling samples of income/sec + total crystals for the stats graphs */
+  incomeHistory: number[];
+  crystalHistory: number[];
+  lastStatSampleAt: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -209,8 +214,10 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 12;
+const VERSION = 13;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
+const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
+const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
 // weekly leaderboard cadence (Mon 2026-01-05 UTC as epoch)
 const LB_WEEK_EPOCH = Date.UTC(2026, 0, 5);
 const LB_WEEK_MS = 7 * 86_400_000;
@@ -303,6 +310,10 @@ function migrate(save: any): any {
   for (const k of ['bossThreshold', 'bossEndsAt', 'bossEarnedAmt', 'bossTarget']) {
     if (typeof save[k] !== 'number') save[k] = 0;
   }
+  // v12→v13: stats history graphs.
+  if (!Array.isArray(save.incomeHistory)) save.incomeHistory = [];
+  if (!Array.isArray(save.crystalHistory)) save.crystalHistory = [];
+  if (typeof save.lastStatSampleAt !== 'number') save.lastStatSampleAt = 0;
   save.version = VERSION;
   return save;
 }
@@ -416,6 +427,9 @@ function defaultState(): GameState {
     bossEndsAt: 0,
     bossEarnedAmt: 0,
     bossTarget: 0,
+    incomeHistory: [],
+    crystalHistory: [],
+    lastStatSampleAt: 0,
   };
 }
 
@@ -1001,6 +1015,17 @@ export class GameEngine {
     }
 
     this.checkAchievements();
+    this.sampleStats(now);
+  }
+
+  /** append an income/crystal data point to the rolling history for the stats graphs */
+  private sampleStats(now: number): void {
+    if (now - this.state.lastStatSampleAt < STAT_SAMPLE_MS) return;
+    this.state.lastStatSampleAt = now;
+    this.state.incomeHistory.push(this.totalIncomePerSec());
+    this.state.crystalHistory.push(this.state.totalCrystalsEarned);
+    if (this.state.incomeHistory.length > STAT_MAX_SAMPLES) this.state.incomeHistory.shift();
+    if (this.state.crystalHistory.length > STAT_MAX_SAMPLES) this.state.crystalHistory.shift();
   }
 
   private scheduleRush(): void {
