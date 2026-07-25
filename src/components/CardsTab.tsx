@@ -5,7 +5,7 @@ import {
 } from '../game/cards';
 import type { TierUp } from './BoxReveal';
 import { formatNumber, formatDuration } from '../game/format';
-import { AD_GEM_REWARD } from '../game/data';
+import { AD_GEM_REWARD, ERAS } from '../game/data';
 import { GEN_BY_ID } from '../game/data';
 import { useGame, useT, useWatchAd } from '../hooks';
 import { GenIcon } from './icons';
@@ -105,6 +105,30 @@ export function CardsTab({ onToast }: { onToast: (m: string) => void }) {
           </button>
         </div>
       ))}
+
+      {/* card albums — collect every card in an era for a permanent bonus */}
+      <div className="section-title">📖 {t('album_title')}</div>
+      <p className="hint">{t('album_hint', { n: 15 })}</p>
+      <div className="album-strip">
+        {ERAS.map((era, i) => {
+          if (i >= s.erasUnlocked) return null;
+          const { have, total } = engine.albumProgress(i);
+          const complete = have >= total;
+          const claimed = engine.albumClaimed(i);
+          return (
+            <button
+              key={era.id}
+              className={`album-cell${claimed ? ' claimed' : complete ? ' ready' : ''}`}
+              disabled={!complete || claimed}
+              onClick={() => { const g = engine.claimAlbum(i); if (g) onToast(t('album_claimed', { n: g })); }}
+            >
+              <span className="album-icon">{era.icon}</span>
+              <span className="album-prog">{claimed ? '✓' : `${have}/${total}`}</span>
+              {complete && !claimed && <span className="album-badge">🎁</span>}
+            </button>
+          );
+        })}
+      </div>
 
       {/* collection */}
       <div className="section-title">🃏 {t('collection_title')}</div>

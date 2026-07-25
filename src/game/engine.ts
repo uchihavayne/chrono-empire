@@ -109,6 +109,8 @@ export interface GameState {
   eons: number;
   /** permanent Eon Upgrade levels (never reset) */
   eonUpgrades: Record<string, number>;
+  /** era indices whose card album has been completed + claimed */
+  albumsClaimed: number[];
   /** number of ascensions performed */
   ascensions: number;
   /** totalCrystalsEarned snapshot at the last ascension → epoch crystals = total − this */
@@ -208,6 +210,7 @@ const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
 const VERSION = 12;
+const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 // weekly leaderboard cadence (Mon 2026-01-05 UTC as epoch)
 const LB_WEEK_EPOCH = Date.UTC(2026, 0, 5);
 const LB_WEEK_MS = 7 * 86_400_000;
@@ -287,6 +290,7 @@ function migrate(save: any): any {
   }
   if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
   if (!save.eonUpgrades || typeof save.eonUpgrades !== 'object') save.eonUpgrades = {};
+  if (!Array.isArray(save.albumsClaimed)) save.albumsClaimed = [];
   if (typeof save.weekId !== 'number') save.weekId = 0;
   if (typeof save.weekStartScore !== 'number') save.weekStartScore = 0;
   if (typeof save.weeklyRewardWeek !== 'number') save.weeklyRewardWeek = -1;
@@ -362,6 +366,7 @@ function defaultState(): GameState {
     iapOwned: [],
     eons: 0,
     eonUpgrades: {},
+    albumsClaimed: [],
     ascensions: 0,
     ascensionStartCrystals: 0,
     tutorialDone: false,
@@ -832,7 +837,34 @@ export class GameEngine {
     // legendary investor era boost
     m *= this.investorEraMult(era);
     m *= 1 + this.skillLevel('combo_master') * 0.05; // Combo Master skill
+    if (this.state.albumsClaimed.includes(era)) m *= 1 + ALBUM_BONUS; // completed card album
     return m;
+  }
+
+  // ─── card albums (collect every card in an era) ───
+  /** collected ≥1 of every venture's card in the era */
+  albumComplete(era: number): boolean {
+    return GENERATORS.filter((g) => g.era === era).every((g) => (this.state.cards[g.id] ?? 0) >= 1);
+  }
+  albumProgress(era: number): { have: number; total: number } {
+    const gens = GENERATORS.filter((g) => g.era === era);
+    return { have: gens.filter((g) => (this.state.cards[g.id] ?? 0) >= 1).length, total: gens.length };
+  }
+  albumClaimed(era: number): boolean { return this.state.albumsClaimed.includes(era); }
+  albumsClaimable(): number {
+    let n = 0;
+    for (let era = 0; era < ERAS.length; era++) if (this.albumComplete(era) && !this.albumClaimed(era)) n++;
+    return n;
+  }
+  claimAlbum(era: number): number {
+    if (this.albumClaimed(era) || !this.albumComplete(era)) return 0;
+    const gems = 15 + era * 4; // deeper eras → bigger reward
+    this.state.gems += gems;
+    this.state.albumsClaimed.push(era);
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return gems;
   }
 
   cycleSpeedMult(): number {
