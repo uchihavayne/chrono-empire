@@ -1197,3 +1197,68 @@ select, .text-input {
   display: block; margin: 10px auto 0; background: none; border: none; cursor: pointer;
   color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 700; text-decoration: underline;
 }
+
+/* ─── Season Pass ─── */
+.season-pass-banner {
+  display: flex; align-items: center; gap: 12px; width: calc(100% - 24px); margin: 4px 12px 0;
+  padding: 11px 14px; border-radius: 14px; cursor: pointer; font-family: inherit; color: var(--text);
+  text-align: left; position: relative; z-index: 1;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(255,210,80,0.3), transparent 60%),
+    linear-gradient(120deg, #2a2450, #4a3d86 55%, #b08a2a);
+  border: 1px solid rgba(255,210,120,0.5);
+  box-shadow: 0 4px 18px rgba(150,120,40,0.35);
+}
+.season-pass-banner:active { transform: scale(0.99); }
+.season-pass-badge {
+  min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: #ff4d6d; color: #fff;
+  font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center;
+  animation: festivalPulse 1.6s ease-in-out infinite;
+}
+.season-overlay {
+  background:
+    radial-gradient(ellipse 110% 60% at 50% 0%, rgba(255,190,60,0.22), transparent 62%),
+    linear-gradient(180deg, #241d3e 0%, #0c0912 72%);
+}
+.sp-hero { text-align: center; padding: 6px 0 12px; }
+.sp-title {
+  font-size: 22px; font-weight: 800;
+  background: linear-gradient(180deg, #fff3c4, #ffc63c 55%, #e0902a);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sp-tier-badge { font-size: 14px; font-weight: 800; color: #ffd66a; margin-top: 4px; }
+.sp-xp { font-size: 12px; color: var(--text-dim); font-weight: 700; margin-top: 4px; }
+.sp-buy {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 4px);
+  margin: 4px 2px 8px; padding: 13px; border-radius: 14px; border: none; cursor: pointer;
+  font-family: inherit; font-weight: 800; font-size: 15px; color: #2a1000;
+  background: linear-gradient(180deg, #ffd66a, #ff9d1c); box-shadow: 0 4px 0 #c26a00, 0 8px 20px rgba(255,160,30,0.4);
+}
+.sp-buy:active { transform: translateY(2px); box-shadow: 0 2px 0 #c26a00; }
+.sp-buy-sub { font-size: 11.5px; font-weight: 700; opacity: 0.8; }
+.sp-owned { text-align: center; font-weight: 800; color: #ffd66a; padding: 8px; }
+.sp-claim-all { width: calc(100% - 4px); margin: 0 2px 6px; }
+
+.sp-track { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch; }
+.sp-tier { flex: 0 0 auto; width: 82px; display: flex; flex-direction: column; gap: 6px; align-items: center; opacity: 0.55; }
+.sp-tier.reached { opacity: 1; }
+.sp-tier.current { opacity: 1; }
+.sp-tier-n {
+  width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; background: rgba(255,255,255,0.12); color: var(--text);
+}
+.sp-tier.current .sp-tier-n { background: linear-gradient(180deg, #ffd66a, #ff9d1c); color: #2a1000; box-shadow: 0 0 12px rgba(255,180,40,0.6); }
+.sp-reward {
+  width: 100%; padding: 10px 4px; border-radius: 11px; text-align: center; font-weight: 800; font-size: 12.5px;
+  position: relative; border: 1px solid var(--card-border);
+}
+.sp-reward.free { background: rgba(120,180,255,0.12); }
+.sp-reward.prem { background: rgba(255,200,80,0.12); border-color: rgba(255,200,80,0.35); }
+.sp-reward.prem.locked { opacity: 0.5; }
+.sp-reward.ready { box-shadow: 0 0 0 1.5px #45e08a; }
+.sp-reward.claimed { opacity: 0.45; }
+.sp-check { position: absolute; top: -6px; right: -4px; color: #45e08a; font-size: 15px; font-weight: 800; }
+.sp-lock { display: block; font-size: 12px; margin-bottom: 2px; }
+
+.sp-task .sp-task-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden; margin: 5px 0 3px; }
+.sp-task .sp-task-bar span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #ffc63c, #ff9d1c); transition: width 0.3s; }

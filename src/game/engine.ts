@@ -23,6 +23,10 @@ import {
   EVENT_STAGES, EVENT_START_TOKENS, eventBuyCost, eventCycleId, eventEndsAt, eventGemsFor, eventGenRate,
 } from './event';
 import { WHEEL_FREE_PER_DAY, WHEEL_MAX_PER_DAY, WHEEL_PRIZES, rollWheel } from './wheel';
+import {
+  SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
+  seasonTierForXp, seasonTierXp, type SeasonTask,
+} from './season';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
@@ -144,6 +148,23 @@ export interface GameState {
   /** Daily Wheel: spins used today + the date (for the free + ad daily limits) */
   wheelSpins: number;
   wheelDate: string;
+  // ─── Season Pass ───
+  seasonId: number;
+  seasonXp: number;
+  seasonPremium: boolean;
+  /** highest tier whose FREE / PREMIUM reward has been claimed */
+  seasonFreeClaimed: number;
+  seasonPremiumClaimed: number;
+  /** today's 3 tasks + the date they were assigned */
+  seasonTasks: SeasonTask[];
+  seasonTaskDate: string;
+  /** daily action counters for task progress (reset each day) */
+  dayDate: string;
+  dayBought: number;
+  dayEarned: number;
+  dayBoxes: number;
+  daySpins: number;
+  dayExped: number;
 }
 
 /** random backup code, grouped for readability e.g. "CE-4F2A-9B7C-1D3E" */
@@ -160,7 +181,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 11;
+const VERSION = 12;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -224,6 +245,17 @@ function migrate(save: any): any {
   if (typeof save.eventStagesUnlocked !== 'number' || save.eventStagesUnlocked < 1) save.eventStagesUnlocked = 1;
   if (typeof save.wheelSpins !== 'number') save.wheelSpins = 0;
   if (typeof save.wheelDate !== 'string') save.wheelDate = '';
+  if (typeof save.seasonId !== 'number') save.seasonId = seasonId();
+  if (typeof save.seasonXp !== 'number') save.seasonXp = 0;
+  if (typeof save.seasonPremium !== 'boolean') save.seasonPremium = false;
+  if (typeof save.seasonFreeClaimed !== 'number') save.seasonFreeClaimed = 0;
+  if (typeof save.seasonPremiumClaimed !== 'number') save.seasonPremiumClaimed = 0;
+  if (!Array.isArray(save.seasonTasks)) save.seasonTasks = [];
+  if (typeof save.seasonTaskDate !== 'string') save.seasonTaskDate = '';
+  if (typeof save.dayDate !== 'string') save.dayDate = '';
+  for (const k of ['dayBought', 'dayEarned', 'dayBoxes', 'daySpins', 'dayExped']) {
+    if (typeof save[k] !== 'number') save[k] = 0;
+  }
   save.version = VERSION;
   return save;
 }
@@ -309,6 +341,19 @@ function defaultState(): GameState {
     eventBoostUntil: 0,
     wheelSpins: 0,
     wheelDate: '',
+    seasonId: seasonId(),
+    seasonXp: 0,
+    seasonPremium: false,
+    seasonFreeClaimed: 0,
+    seasonPremiumClaimed: 0,
+    seasonTasks: [],
+    seasonTaskDate: '',
+    dayDate: '',
+    dayBought: 0,
+    dayEarned: 0,
+    dayBoxes: 0,
+    daySpins: 0,
+    dayExped: 0,
   };
 }
 
@@ -337,6 +382,7 @@ export class GameEngine {
     this.state = this.load();
     this.syncManagers(); // managers derive from the (persistent) card collection
     this.checkEventRollover(); // pay out + reset a finished event cycle BEFORE offline accrual
+    this.checkSeasonRollover(); // reset the season pass if a new 30-day season started
     this.applyOfflineProgress();
     this.refreshDaily();
     this.scheduleAnomaly();
@@ -474,6 +520,8 @@ export class GameEngine {
       this.state.iapOwned.push(productId);
       if (productId === 'remove_ads') this.state.removeAds = true;
       if (productId === 'starter_pack') this.state.starterPack = true;
+    } else if (productId === 'season_pass') {
+      this.unlockSeasonPremium();
     } else if (p.gems) {
       this.state.gems += p.gems;
     }
@@ -859,6 +907,7 @@ export class GameEngine {
     this.state.cash += amount;
     this.state.lifetimeCash += amount;
     this.state.runCash += amount;
+    this.state.dayEarned += amount;
   }
 
   // ─── player actions ───
@@ -902,6 +951,7 @@ export class GameEngine {
     if (this.state.cash < cost) return;
     this.state.cash -= cost;
     this.state.generators[genId].count += count;
+    this.state.dayBought += count;
     if (this.state.sfxOn) audio.sfxBuy();
     this.emit();
   }
@@ -957,6 +1007,7 @@ export class GameEngine {
     const ids = rollBox('uncommon');
     this.grantCards(ids);
     this.state.boxesToday++;
+    this.state.dayBoxes++;
     if (this.state.sfxOn) audio.sfxReward();
     this.save(); this.emit();
     return ids;
@@ -969,6 +1020,7 @@ export class GameEngine {
     this.state.gems -= box.gemCost;
     const ids = rollBox(boxId);
     this.grantCards(ids);
+    this.state.dayBoxes++;
     if (this.state.sfxOn) audio.sfxReward();
     this.save(); this.emit();
     return ids;
@@ -1415,6 +1467,7 @@ export class GameEngine {
     this.refreshExpDay();
     if (!this.expeditionUnlocked() || this.state.expToday >= EXP_MAX_PER_DAY) return false;
     this.state.expToday++;
+    this.state.dayExped++;
     this.expeditionOpen = true;
     if (this.state.sfxOn) audio.sfxAnomaly();
     this.save();
@@ -1462,6 +1515,118 @@ export class GameEngine {
   /** relic_start adds to the Stability a run begins with */
   expeditionStartStability(): number {
     return EXP_START_STABILITY + this.relicLevel('relic_start') * RELIC_BY_ID['relic_start'].value;
+  }
+
+  // ─── Season Pass ───
+  private refreshDayCounters(): void {
+    const today = this.todayStr();
+    if (this.state.dayDate !== today) {
+      this.state.dayDate = today;
+      this.state.dayBought = 0; this.state.dayEarned = 0;
+      this.state.dayBoxes = 0; this.state.daySpins = 0; this.state.dayExped = 0;
+    }
+  }
+
+  /** roll the season over when the 30-day cycle changes: reset XP/tiers/premium/tasks */
+  checkSeasonRollover(): void {
+    const cur = seasonId();
+    if (this.state.seasonId === cur) return;
+    this.state.seasonId = cur;
+    this.state.seasonXp = 0;
+    this.state.seasonPremium = false;
+    this.state.seasonFreeClaimed = 0;
+    this.state.seasonPremiumClaimed = 0;
+    this.state.seasonTasks = [];
+    this.state.seasonTaskDate = '';
+  }
+
+  seasonTimeLeftMs(): number { return Math.max(0, seasonEndsAt() - Date.now()); }
+  seasonTier(): number { return seasonTierForXp(this.state.seasonXp); }
+  seasonTierProgress(): { xpIn: number; xpNeed: number } {
+    const tier = this.seasonTier();
+    return { xpIn: this.state.seasonXp - seasonTierXp(tier), xpNeed: SEASON_XP_PER_TIER };
+  }
+
+  /** assign today's 3 tasks if not done yet (or the day changed) */
+  refreshSeasonTasks(): void {
+    this.checkSeasonRollover();
+    this.refreshDayCounters();
+    const today = this.todayStr();
+    if (this.state.seasonTaskDate !== today || this.state.seasonTasks.length === 0) {
+      this.state.seasonTaskDate = today;
+      this.state.seasonTasks = assignTasks(this.totalIncomePerSec());
+    }
+  }
+
+  seasonTaskProgress(id: string): number {
+    switch (id) {
+      case 'buy': return this.state.dayBought;
+      case 'earn': return this.state.dayEarned;
+      case 'boxes': return this.state.dayBoxes;
+      case 'spins': return this.state.daySpins;
+      case 'exped': return this.state.dayExped;
+      default: return 0;
+    }
+  }
+
+  claimSeasonTask(index: number): boolean {
+    this.refreshSeasonTasks();
+    const task = this.state.seasonTasks[index];
+    if (!task || task.claimed) return false;
+    if (this.seasonTaskProgress(task.id) < task.target) return false;
+    task.claimed = true;
+    this.state.seasonXp += task.xp;
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return true;
+  }
+
+  private grantReward(r: { kind: string; amount: number }): void {
+    switch (r.kind) {
+      case 'cash': this.earn(Math.max(this.totalIncomePerSec() * r.amount, this.state.cash * 0.03, 500)); break;
+      case 'gems': this.state.gems += r.amount; break;
+      case 'boost': { const base = Math.max(Date.now(), this.state.boostUntil); this.state.boostUntil = base + r.amount * 60_000; break; }
+      case 'card': this.grantCards(rollBox('uncommon').slice(0, r.amount)); break;
+    }
+  }
+
+  /** claim all unclaimed FREE (and PREMIUM if owned) rewards up to the current tier */
+  claimSeasonRewards(): number {
+    const tier = this.seasonTier();
+    let claimed = 0;
+    for (let tr = this.state.seasonFreeClaimed + 1; tr <= tier; tr++) {
+      this.grantReward(seasonFreeReward(tr));
+      this.state.seasonFreeClaimed = tr;
+      claimed++;
+    }
+    if (this.state.seasonPremium) {
+      for (let tr = this.state.seasonPremiumClaimed + 1; tr <= tier; tr++) {
+        this.grantReward(seasonPremiumReward(tr));
+        this.state.seasonPremiumClaimed = tr;
+        claimed++;
+      }
+    }
+    if (claimed > 0 && this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return claimed;
+  }
+
+  seasonUnclaimedCount(): number {
+    const tier = this.seasonTier();
+    let n = Math.max(0, tier - this.state.seasonFreeClaimed);
+    if (this.state.seasonPremium) n += Math.max(0, tier - this.state.seasonPremiumClaimed);
+    return n;
+  }
+
+  /** unlock the premium track for this season (called after the season_pass IAP) */
+  unlockSeasonPremium(): void {
+    this.state.seasonPremium = true;
+    // retro-grant premium rewards for tiers already reached
+    this.claimSeasonRewards();
+    this.save();
+    this.emit();
   }
 
   // ─── Event World (limited-time parallel world) ───
@@ -1612,6 +1777,7 @@ export class GameEngine {
       }
     }
     this.state.wheelSpins++;
+    this.state.daySpins++;
     if (this.state.sfxOn) audio.sfxReward();
     this.save();
     this.emit();

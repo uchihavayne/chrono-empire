@@ -33,6 +33,7 @@ export interface ProductDef {
 export const PRODUCTS: ProductDef[] = [
   { id: 'remove_ads',   kind: 'noncon',     icon: '🚫' },
   { id: 'starter_pack', kind: 'noncon',     icon: '🎁' },
+  { id: 'season_pass',  kind: 'consumable', icon: '🎟️' }, // premium Season Pass (per-season)
   { id: 'gems_small',   kind: 'consumable', gems: 120,  icon: '💠' },
   { id: 'gems_medium',  kind: 'consumable', gems: 650,  icon: '💠' },
   { id: 'gems_large',   kind: 'consumable', gems: 2000, icon: '💠' },

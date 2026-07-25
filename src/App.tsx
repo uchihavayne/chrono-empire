@@ -22,6 +22,7 @@ import { IntroScreen } from './components/IntroScreen';
 import { ExpeditionMode } from './components/ExpeditionMode';
 import { EventWorld } from './components/EventWorld';
 import { WheelModal } from './components/WheelModal';
+import { SeasonPass } from './components/SeasonPass';
 
 type Tab = 'empire' | 'cards' | 'rebirth' | 'more';
 
@@ -45,6 +46,7 @@ export default function App() {
   const t = useMemo(() => makeT(s.lang), [s.lang]);
   const [intro, setIntro] = useState(true);
   const [showWheel, setShowWheel] = useState(false);
+  const [showSeason, setShowSeason] = useState(false);
   const [tab, setTab] = useState<Tab>('empire');
   // the era the player is currently VIEWING (drives backdrop + accent theme). Income
   // still uses the highest unlocked era; only the visuals follow what you browse.
@@ -237,6 +239,18 @@ export default function App() {
             </div>
           )}
 
+          {/* Season Pass entry */}
+          <button className="season-pass-banner" onClick={() => setShowSeason(true)}>
+            <span className="festival-emblem">🏆</span>
+            <div className="festival-mid">
+              <div className="festival-name">{t('sp_title')} · {t('sp_tier', { n: engine.seasonTier() })}</div>
+              <div className="festival-sub">{t('sp_banner')}</div>
+            </div>
+            {engine.seasonUnclaimedCount() > 0
+              ? <span className="season-pass-badge">{engine.seasonUnclaimedCount()}</span>
+              : <span className="festival-go">{t('ev_enter')} ›</span>}
+          </button>
+
           {/* Event World entry — a limited-time parallel world */}
           <button className="festival-banner" onClick={() => engine.openEventWorld()}>
             <span className="festival-emblem">🎪</span>
@@ -386,6 +400,9 @@ export default function App() {
 
           {/* Daily Wheel */}
           {showWheel && <WheelModal onClose={() => setShowWheel(false)} />}
+
+          {/* Season Pass */}
+          {showSeason && <SeasonPass onClose={() => setShowSeason(false)} />}
 
           {/* event cycle ended → gems paid out */}
           {s.eventPayoutGems > 0 && (
