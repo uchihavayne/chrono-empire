@@ -1090,29 +1090,37 @@ select, .text-input {
 .exp-escape:active { transform: scale(0.97); }
 
 /* ─── Event World (limited-time parallel world) ─── */
-.festival-banner {
-  display: flex; align-items: center; gap: 12px; width: calc(100% - 24px); margin: 4px 12px 0;
-  padding: 11px 14px; border-radius: 14px; cursor: pointer; font-family: inherit; color: var(--text);
-  text-align: left; position: relative; z-index: 1;
-  background:
-    radial-gradient(circle at 12% 50%, rgba(255,120,220,0.28), transparent 60%),
-    linear-gradient(120deg, #3a1d5c, #5a2a86 55%, #b0417a);
-  border: 1px solid rgba(255,150,230,0.5);
-  box-shadow: 0 4px 18px rgba(150,40,140,0.4);
-  animation: festivalPulse 2.4s ease-in-out infinite;
+/* compact live-ops row — Season Pass / Time Keeper / Event World as side-by-side tiles */
+.events-row { display: flex; gap: 8px; width: calc(100% - 24px); margin: 6px 12px 0; }
+.event-tile {
+  position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; gap: 1px; padding: 9px 6px 8px; border-radius: 14px;
+  cursor: pointer; font-family: inherit; color: var(--text); text-align: center;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
 }
+.event-tile:active { transform: scale(0.97); }
+.event-tile .et-emblem { font-size: 24px; line-height: 1.1; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.45)); }
+.event-tile .et-label { font-weight: 800; font-size: 12px; white-space: nowrap; }
+.event-tile .et-meta {
+  font-size: 9.5px; font-weight: 700; opacity: 0.9; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.event-tile.sp   { background: radial-gradient(circle at 50% 0%, rgba(255,210,80,0.28), transparent 65%), linear-gradient(150deg, #2a2450, #4a3d86 60%, #b08a2a); border-color: rgba(255,210,120,0.5); }
+.event-tile.boss { background: radial-gradient(circle at 50% 0%, rgba(255,90,110,0.32), transparent 65%), linear-gradient(150deg, #3a1224, #6a1f38 60%, #b03a2a); border-color: rgba(255,120,120,0.55); animation: festivalPulse 1.6s ease-in-out infinite; }
+.event-tile.fest { background: radial-gradient(circle at 50% 0%, rgba(255,120,220,0.28), transparent 65%), linear-gradient(150deg, #3a1d5c, #5a2a86 60%, #b0417a); border-color: rgba(255,150,230,0.5); }
+.event-tile.fest .et-meta { color: #ffd9f2; }
+.event-tile .et-badge {
+  position: absolute; top: -6px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 10px; background: #ff4d6d; color: #fff; font-weight: 800; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 7px rgba(0,0,0,0.45);
+  animation: festivalPulse 1.6s ease-in-out infinite;
+}
+.event-tile .et-badge.alert { background: #ff7a3c; }
+
 @keyframes festivalPulse {
   0%,100% { box-shadow: 0 4px 18px rgba(150,40,140,0.4); }
   50% { box-shadow: 0 4px 26px rgba(230,80,200,0.6); }
-}
-.festival-banner:active { transform: scale(0.99); }
-.festival-emblem { font-size: 30px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
-.festival-mid { flex: 1; min-width: 0; }
-.festival-name { font-weight: 800; font-size: 14.5px; }
-.festival-sub { font-size: 11.5px; color: #ffd9f2; font-weight: 700; margin-top: 1px; }
-.festival-go {
-  font-weight: 800; font-size: 13px; color: #fff; white-space: nowrap;
-  background: rgba(255,255,255,0.18); padding: 6px 11px; border-radius: 20px;
 }
 
 .event-overlay {
@@ -1204,22 +1212,6 @@ select, .text-input {
 }
 
 /* ─── Season Pass ─── */
-.season-pass-banner {
-  display: flex; align-items: center; gap: 12px; width: calc(100% - 24px); margin: 4px 12px 0;
-  padding: 11px 14px; border-radius: 14px; cursor: pointer; font-family: inherit; color: var(--text);
-  text-align: left; position: relative; z-index: 1;
-  background:
-    radial-gradient(circle at 12% 50%, rgba(255,210,80,0.3), transparent 60%),
-    linear-gradient(120deg, #2a2450, #4a3d86 55%, #b08a2a);
-  border: 1px solid rgba(255,210,120,0.5);
-  box-shadow: 0 4px 18px rgba(150,120,40,0.35);
-}
-.season-pass-banner:active { transform: scale(0.99); }
-.season-pass-badge {
-  min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: #ff4d6d; color: #fff;
-  font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center;
-  animation: festivalPulse 1.6s ease-in-out infinite;
-}
 .season-overlay {
   background:
     radial-gradient(ellipse 110% 60% at 50% 0%, rgba(255,190,60,0.22), transparent 62%),
@@ -1300,18 +1292,6 @@ select, .text-input {
 }
 
 /* ─── Time Keeper boss ─── */
-.boss-banner {
-  display: flex; align-items: center; gap: 12px; width: calc(100% - 24px); margin: 4px 12px 0;
-  padding: 11px 14px; border-radius: 14px; cursor: pointer; font-family: inherit; color: var(--text);
-  text-align: left; position: relative; z-index: 1;
-  background:
-    radial-gradient(circle at 12% 50%, rgba(255,90,110,0.32), transparent 60%),
-    linear-gradient(120deg, #3a1224, #6a1f38 55%, #b03a2a);
-  border: 1px solid rgba(255,120,120,0.55);
-  box-shadow: 0 4px 18px rgba(180,50,50,0.4); animation: festivalPulse 1.6s ease-in-out infinite;
-}
-.boss-banner:active { transform: scale(0.99); }
-.boss-go { font-size: 22px; }
 .boss-modal { text-align: center; }
 .boss-icon { font-size: 54px; filter: drop-shadow(0 4px 14px rgba(255,90,110,0.5)); }
 .boss-timer { font-size: 22px; font-weight: 800; color: #ff5c74; margin: 4px 0; }

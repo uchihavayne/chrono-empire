@@ -242,41 +242,31 @@ export default function App() {
             </div>
           )}
 
-          {/* Season Pass entry */}
-          <button className="season-pass-banner" onClick={() => setShowSeason(true)}>
-            <span className="festival-emblem">🏆</span>
-            <div className="festival-mid">
-              <div className="festival-name">{t('sp_title')} · {t('sp_tier', { n: engine.seasonTier() })}</div>
-              <div className="festival-sub">{t('sp_banner')}</div>
-            </div>
-            {engine.seasonUnclaimedCount() > 0
-              ? <span className="season-pass-badge">{engine.seasonUnclaimedCount()}</span>
-              : <span className="festival-go">{t('ev_enter')} ›</span>}
-          </button>
-
-          {/* Time Keeper boss — appears when one is available or a fight is running */}
-          {(engine.availableBoss() !== null || engine.bossActive()) && (
-            <button className="boss-banner" onClick={() => setShowBoss(true)}>
-              <span className="festival-emblem">⏳</span>
-              <div className="festival-mid">
-                <div className="festival-name">{t('boss_title')}</div>
-                <div className="festival-sub">
-                  {engine.bossActive() ? t('boss_fighting') : t('boss_era', { n: engine.availableBoss() ?? 0 })}
-                </div>
-              </div>
-              <span className="boss-go">⚔️</span>
+          {/* compact live-ops row: Season Pass, Time Keeper boss, Event World — one tappable
+              tile each, replacing the old stack of three full-width banners */}
+          <div className="events-row">
+            <button className="event-tile sp" onClick={() => setShowSeason(true)}>
+              <span className="et-emblem">🏆</span>
+              <span className="et-label">{t('sp_short')}</span>
+              <span className="et-meta">{t('sp_tier', { n: engine.seasonTier() })}</span>
+              {engine.seasonUnclaimedCount() > 0 && <span className="et-badge">{engine.seasonUnclaimedCount()}</span>}
             </button>
-          )}
 
-          {/* Event World entry — a limited-time parallel world */}
-          <button className="festival-banner" onClick={() => engine.openEventWorld()}>
-            <span className="festival-emblem">🎪</span>
-            <div className="festival-mid">
-              <div className="festival-name">{t('ev_name')}</div>
-              <div className="festival-sub">{t('ev_banner', { t: formatDuration(engine.eventTimeLeftMs() / 1000) })}</div>
-            </div>
-            <span className="festival-go">{t('ev_enter')} ›</span>
-          </button>
+            {(engine.availableBoss() !== null || engine.bossActive()) && (
+              <button className="event-tile boss" onClick={() => setShowBoss(true)}>
+                <span className="et-emblem">⏳</span>
+                <span className="et-label">{t('boss_short')}</span>
+                <span className="et-meta">{engine.bossActive() ? t('boss_live') : `⚔️ ${t('boss_ready')}`}</span>
+                <span className="et-badge alert">!</span>
+              </button>
+            )}
+
+            <button className="event-tile fest" onClick={() => engine.openEventWorld()}>
+              <span className="et-emblem">🎪</span>
+              <span className="et-label">{t('ev_short')}</span>
+              <span className="et-meta">⏱ {formatDuration(engine.eventTimeLeftMs() / 1000)}</span>
+            </button>
+          </div>
 
           {/* content */}
           <div className="content">
