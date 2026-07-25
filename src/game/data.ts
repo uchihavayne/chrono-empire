@@ -223,6 +223,10 @@ export const SKILLS: SkillDef[] = [
   { id: 'golden_touch',  icon: '✨', maxLevel: 4,  baseCost: 20,  costRate: 2.0 },
   { id: 'ad_master',     icon: '📺', maxLevel: 4,  baseCost: 15,  costRate: 2.0 },
   { id: 'keep_managers', icon: '🎩', maxLevel: 3,  baseCost: 50,  costRate: 3.0 },
+  // ── expanded branches ──
+  { id: 'crit_income',   icon: '💥', maxLevel: 10, baseCost: 12,  costRate: 1.9 }, // +4% global income/lvl
+  { id: 'combo_master',  icon: '🔗', maxLevel: 6,  baseCost: 18,  costRate: 2.0 }, // +5% per-venture profit/lvl
+  { id: 'auto_buy',      icon: '🤖', maxLevel: 3,  baseCost: 40,  costRate: 2.6 }, // auto-buys businesses
 ];
 
 export const SKILL_BY_ID: Record<string, SkillDef> = Object.fromEntries(

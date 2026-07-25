@@ -783,6 +783,7 @@ export class GameEngine {
     let m = ERAS[this.eraIndex()].mult * this.prestigeMult() * this.achievementMult() * this.rankMult();
     m *= this.investorPerk('global');
     m *= 1 + this.relicLevel('relic_income') * RELIC_BY_ID['relic_income'].value; // expedition relic
+    m *= 1 + this.skillLevel('crit_income') * 0.04; // Critical Income skill
     if (this.state.starterPack) m *= 2; // permanent IAP boost
     if (this.state.vip) m *= 2; // VIP subscription perk
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
@@ -810,6 +811,7 @@ export class GameEngine {
     if (this.eraSetComplete(era)) m *= SET_BONUS_MULT;
     // legendary investor era boost
     m *= this.investorEraMult(era);
+    m *= 1 + this.skillLevel('combo_master') * 0.05; // Combo Master skill
     return m;
   }
 
@@ -862,10 +864,25 @@ export class GameEngine {
   }
 
   // ─── ticking ───
+  private autoBuyAccum = 0;
+  private autoBuyStep(): void {
+    const gens = GENERATORS.filter((g) => g.era < this.state.erasUnlocked)
+      .sort((a, b) => this.buyCost(a.id, 1).cost - this.buyCost(b.id, 1).cost);
+    for (const g of gens) {
+      if (this.state.cash >= this.buyCost(g.id, 1).cost) this.buyGenerator(g.id, 1);
+    }
+  }
+
   private tick(dt: number): void {
     // Event World tokens accrue continuously (event businesses are auto-producing)
     this.accrueEvent(dt);
     if (this.state.bossThreshold > 0) this.checkBoss();
+    // Auto-Buy skill: periodically buy 1 of every affordable business (interval shrinks with level)
+    const autoLvl = this.skillLevel('auto_buy');
+    if (autoLvl > 0) {
+      this.autoBuyAccum += dt;
+      if (this.autoBuyAccum >= Math.max(1, 4 - autoLvl)) { this.autoBuyAccum = 0; this.autoBuyStep(); }
+    }
     for (const g of GENERATORS) {
       const gs = this.state.generators[g.id];
       if (gs.count === 0) continue;
