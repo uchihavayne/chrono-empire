@@ -207,9 +207,9 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
       <div className="section-title">🛒 {t('shop_title')}</div>
       <p className="hint">{t('shop_hint')}</p>
       {PRODUCTS.map((p) => {
-        const owned = p.kind === 'noncon' && s.iapOwned.includes(p.id);
+        const owned = (p.kind === 'noncon' && s.iapOwned.includes(p.id)) || (p.id === 'vip_monthly' && s.vip);
         return (
-          <div key={p.id} className="row-card" style={{ marginTop: 6 }}>
+          <div key={p.id} className={`row-card${p.id === 'vip_monthly' ? ' vip-card' : ''}`} style={{ marginTop: 6 }}>
             <div className="icon-tile">{p.icon}</div>
             <div className="info"><div className="title">{t(`iap_${p.id}_t`)}</div></div>
             <button
@@ -217,11 +217,17 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
               disabled={owned || buying === p.id}
               onClick={() => buy(p.id)}
             >
-              {owned ? t('shop_owned') : t('shop_buy')}
+              {owned ? (p.id === 'vip_monthly' ? t('vip_active') : t('shop_owned')) : t('shop_buy')}
             </button>
           </div>
         );
       })}
+      {s.vip && engine.vipGemsAvailable() && (
+        <button className="action-btn" style={{ width: '100%', padding: 10, marginTop: 6 }}
+          onClick={() => { engine.claimVipGems(); onToast(t('vip_gems_claimed')); }}>
+          ⭐ {t('vip_daily_gems')}
+        </button>
+      )}
       <button className="action-btn purple" style={{ width: '100%', padding: 10, marginTop: 8 }} onClick={restorePurchases}>
         {t('shop_restore')}
       </button>

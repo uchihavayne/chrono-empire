@@ -17,8 +17,10 @@ export const IAP_CONFIG = {
 
 export const ENTITLEMENT_REMOVE_ADS = 'remove_ads';
 export const ENTITLEMENT_STARTER = 'starter_pack';
+export const ENTITLEMENT_VIP = 'vip';
+export const VIP_DAILY_GEMS = 30;
 
-export type IapKind = 'noncon' | 'consumable';
+export type IapKind = 'noncon' | 'consumable' | 'sub';
 
 export interface ProductDef {
   id: string;
@@ -32,6 +34,7 @@ export interface ProductDef {
 // Store-facing product ids. Keep these in sync with the stores + RevenueCat.
 export const PRODUCTS: ProductDef[] = [
   { id: 'remove_ads',   kind: 'noncon',     icon: '🚫' },
+  { id: 'vip_monthly',  kind: 'sub',        icon: '⭐' }, // VIP: 2x income + no ads + daily gems
   { id: 'starter_pack', kind: 'noncon',     icon: '🎁' },
   { id: 'season_pass',  kind: 'consumable', icon: '🎟️' }, // premium Season Pass (per-season)
   { id: 'gems_small',   kind: 'consumable', gems: 120,  icon: '💠' },

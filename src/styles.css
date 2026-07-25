@@ -1332,3 +1332,7 @@ select, .text-input {
 }
 .skin-name { font-weight: 800; font-size: 12px; }
 .skin-tag { font-size: 11px; font-weight: 800; color: var(--acc); }
+
+/* VIP shop card */
+.vip-card { border-color: rgba(255,210,80,0.55) !important;
+  background: radial-gradient(circle at 10% 50%, rgba(255,210,80,0.14), transparent 60%), var(--card) !important; }

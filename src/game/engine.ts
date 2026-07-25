@@ -31,7 +31,7 @@ import {
   seasonTierForXp, seasonTierXp, type SeasonTask,
 } from './season';
 import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
-import { PRODUCT_BY_ID } from '../services/iap';
+import { PRODUCT_BY_ID, VIP_DAILY_GEMS } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
 import {
   BOX_BY_ID, CARD_BY_ID, CARDS_BY_RARITY, FUSION_COST, cardManagerUnlocked, cardProfitMult,
@@ -173,6 +173,9 @@ export interface GameState {
   /** cosmetic skins: selected id + owned ids */
   skin: string;
   ownedSkins: string[];
+  /** VIP subscription: active flag + last daily-gem claim date */
+  vip: boolean;
+  vipGemsDate: string;
   // ─── Time Keeper bosses ───
   /** era thresholds whose boss has been defeated */
   bossesDefeated: number[];
@@ -276,6 +279,8 @@ function migrate(save: any): any {
   if (typeof save.skin !== 'string') save.skin = 'default';
   if (!Array.isArray(save.ownedSkins)) save.ownedSkins = ['default'];
   if (!save.ownedSkins.includes('default')) save.ownedSkins.push('default');
+  if (typeof save.vip !== 'boolean') save.vip = false;
+  if (typeof save.vipGemsDate !== 'string') save.vipGemsDate = '';
   if (!Array.isArray(save.bossesDefeated)) save.bossesDefeated = [];
   for (const k of ['bossThreshold', 'bossEndsAt', 'bossEarnedAmt', 'bossTarget']) {
     if (typeof save[k] !== 'number') save[k] = 0;
@@ -381,6 +386,8 @@ function defaultState(): GameState {
     challengesDone: [],
     skin: 'default',
     ownedSkins: ['default'],
+    vip: false,
+    vipGemsDate: '',
     bossesDefeated: [],
     bossThreshold: 0,
     bossEndsAt: 0,
@@ -552,6 +559,8 @@ export class GameEngine {
       this.state.iapOwned.push(productId);
       if (productId === 'remove_ads') this.state.removeAds = true;
       if (productId === 'starter_pack') this.state.starterPack = true;
+    } else if (productId === 'vip_monthly' || p.kind === 'sub') {
+      this.state.vip = true;
     } else if (productId === 'season_pass') {
       this.unlockSeasonPremium();
     } else if (p.gems) {
@@ -572,6 +581,8 @@ export class GameEngine {
       this.state.starterPack = true;
       if (!this.state.iapOwned.includes('starter_pack')) this.state.iapOwned.push('starter_pack');
     }
+    // VIP is a subscription — its entitlement reflects the CURRENT active state
+    this.state.vip = entitlements.includes('vip');
     this.save();
     this.emit();
   }
@@ -773,6 +784,7 @@ export class GameEngine {
     m *= this.investorPerk('global');
     m *= 1 + this.relicLevel('relic_income') * RELIC_BY_ID['relic_income'].value; // expedition relic
     if (this.state.starterPack) m *= 2; // permanent IAP boost
+    if (this.state.vip) m *= 2; // VIP subscription perk
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
     const season = seasonalEvent();
     if (season) m *= season.mult; // weekend / power-hour / holiday live-ops bonus
@@ -1042,6 +1054,20 @@ export class GameEngine {
   }
   skinAccent(): Record<string, string> | null {
     return (SKIN_BY_ID[this.state.skin] ?? SKIN_BY_ID['default']).accent;
+  }
+
+  // ─── VIP subscription ───
+  /** VIP owners skip ads (rewards granted instantly) — same as the No-Ads Pass */
+  adsRemoved(): boolean { return this.state.removeAds || this.state.vip; }
+  vipGemsAvailable(): boolean { return this.state.vip && this.state.vipGemsDate !== this.todayStr(); }
+  claimVipGems(): boolean {
+    if (!this.vipGemsAvailable()) return false;
+    this.state.vipGemsDate = this.todayStr();
+    this.state.gems += VIP_DAILY_GEMS;
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return true;
   }
 
   // ─── Time Keeper bosses ───

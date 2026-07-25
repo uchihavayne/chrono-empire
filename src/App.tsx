@@ -149,8 +149,8 @@ export default function App() {
 
   const watchAd = useCallback(
     (onReward: () => void) => {
-      // No-Ads Pass owners get the reward instantly, no ad shown.
-      if (engine.state.removeAds) { onReward(); return; }
+      // No-Ads Pass / VIP owners get the reward instantly, no ad shown.
+      if (engine.adsRemoved()) { onReward(); return; }
       void showRewardedAd().then((ok) => {
         if (ok) onReward();
       });
