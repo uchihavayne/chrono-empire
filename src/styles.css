@@ -1336,3 +1336,6 @@ select, .text-input {
 /* VIP shop card */
 .vip-card { border-color: rgba(255,210,80,0.55) !important;
   background: radial-gradient(circle at 10% 50%, rgba(255,210,80,0.14), transparent 60%), var(--card) !important; }
+
+/* weekly leaderboard countdown */
+.lb-week { font-size: 12px; font-weight: 700; color: #ff9d6a; margin-left: 6px; }

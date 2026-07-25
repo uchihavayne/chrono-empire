@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, ACH_TIER_GEMS, ACH_TIER_MEDAL, achTier, DAILY_REWARDS } from '../game/data';
 import { CHALLENGES } from '../game/challenge';
 import { SKINS } from '../game/skins';
-import { formatNumber } from '../game/format';
+import { formatNumber, formatDuration } from '../game/format';
 import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
 import { ConfirmModal } from './Modals';
@@ -172,9 +172,15 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         </>
       )}
 
-      {/* leaderboard */}
-      <div className="section-title">🏅 {t('lb_title')}</div>
-      <p className="hint">{t('lb_hint', { v: formatNumber(engine.leaderboardScore(), s.notation) })}</p>
+      {/* weekly leaderboard */}
+      <div className="section-title">🏅 {t('lb_title')} <span className="lb-week">⏳ {formatDuration(engine.weekTimeLeftMs() / 1000)}</span></div>
+      <p className="hint">{t('lb_hint_weekly', { v: formatNumber(engine.weeklyScore(), s.notation) })}</p>
+      {engine.weeklyRewardClaimable() && (() => { const rank = lb.findIndex((e) => e.me) + 1; return (
+        <button className="action-btn" style={{ width: '100%', padding: 10, marginBottom: 6 }}
+          onClick={() => { const g = engine.claimWeeklyReward(rank); onToast(t('lb_reward_got', { n: g })); }}>
+          🎁 {rank > 0 ? t('lb_claim_rank', { n: rank }) : t('lb_claim')}
+        </button>
+      ); })()}
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           className="text-input"

@@ -115,6 +115,10 @@ export interface GameState {
   ascensionStartCrystals: number;
   /** first-run onboarding shown/dismissed */
   tutorialDone: boolean;
+  /** weekly leaderboard: current week id, this-week baseline score, last week we claimed a reward */
+  weekId: number;
+  weekStartScore: number;
+  weeklyRewardWeek: number;
   /** display name shown on the global leaderboard */
   playerName: string;
   /** premium Gems 💠 currency (buys card boxes; separate from Chrono Crystals) */
@@ -204,6 +208,9 @@ const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
 const VERSION = 12;
+// weekly leaderboard cadence (Mon 2026-01-05 UTC as epoch)
+const LB_WEEK_EPOCH = Date.UTC(2026, 0, 5);
+const LB_WEEK_MS = 7 * 86_400_000;
 
 /** migrate a parsed save of any older version up to the current schema (never destructive).
  *  Migrations may only ADD access, never remove it, so a player can never lose progress. */
@@ -280,6 +287,9 @@ function migrate(save: any): any {
   }
   if (!Array.isArray(save.challengesDone)) save.challengesDone = [];
   if (!save.eonUpgrades || typeof save.eonUpgrades !== 'object') save.eonUpgrades = {};
+  if (typeof save.weekId !== 'number') save.weekId = 0;
+  if (typeof save.weekStartScore !== 'number') save.weekStartScore = 0;
+  if (typeof save.weeklyRewardWeek !== 'number') save.weeklyRewardWeek = -1;
   if (typeof save.skin !== 'string') save.skin = 'default';
   if (!Array.isArray(save.ownedSkins)) save.ownedSkins = ['default'];
   if (!save.ownedSkins.includes('default')) save.ownedSkins.push('default');
@@ -389,6 +399,9 @@ function defaultState(): GameState {
     daySpins: 0,
     dayExped: 0,
     challengesDone: [],
+    weekId: 0,
+    weekStartScore: 0,
+    weeklyRewardWeek: -1,
     skin: 'default',
     ownedSkins: ['default'],
     vip: false,
@@ -427,6 +440,7 @@ export class GameEngine {
     this.syncManagers(); // managers derive from the (persistent) card collection
     this.checkEventRollover(); // pay out + reset a finished event cycle BEFORE offline accrual
     this.checkSeasonRollover(); // reset the season pass if a new 30-day season started
+    this.checkWeekRollover(); // reset the weekly leaderboard baseline if a new week started
     this.applyOfflineProgress();
     this.refreshDaily();
     this.scheduleAnomaly();
@@ -1680,20 +1694,61 @@ export class GameEngine {
     return seasonalEvent();
   }
 
-  // ─── global leaderboard ───
-  /** the number ranked on the board: lifetime crystals, boosted by ascension Eons */
+  // ─── global leaderboard (weekly) ───
+  /** the number ranked on the all-time board: lifetime crystals, boosted by ascension Eons */
   leaderboardScore(): number {
     return Math.floor(this.state.totalCrystalsEarned + this.state.eons * 1000);
   }
+  /** the current 7-day competition id, and how much time is left in it */
+  weeklyId(now = Date.now()): number { return Math.floor((now - LB_WEEK_EPOCH) / LB_WEEK_MS); }
+  weekTimeLeftMs(): number { return Math.max(0, LB_WEEK_EPOCH + (this.weeklyId() + 1) * LB_WEEK_MS - Date.now()); }
+  /** PROGRESS made this week — resets every week for a fresh competition */
+  weeklyScore(): number { return Math.max(0, this.leaderboardScore() - this.state.weekStartScore); }
+
+  /** roll the weekly baseline when a new week starts (called on load + before submitting) */
+  checkWeekRollover(): void {
+    const cur = this.weeklyId();
+    if (this.state.weekId !== cur) {
+      this.state.weekId = cur;
+      this.state.weekStartScore = this.leaderboardScore(); // this week's progress restarts at 0
+    }
+  }
+
   async submitLeaderboard(name: string): Promise<boolean> {
     const clean = name.trim().slice(0, 16);
     this.state.playerName = clean;
+    this.checkWeekRollover();
     this.save();
     this.emit();
-    return submitScore(this.state.cloudCode, clean, this.leaderboardScore());
+    // submit to both the all-time board and the current weekly board
+    await submitScore(this.state.cloudCode, clean, this.leaderboardScore());
+    return submitScore(this.state.cloudCode, clean, this.weeklyScore(), `scores_w${this.state.weekId}`);
   }
   async fetchLeaderboard(limit = 20): Promise<LbEntry[]> {
-    return topScores(limit, this.state.cloudCode);
+    this.checkWeekRollover();
+    return topScores(limit, this.state.cloudCode, `scores_w${this.state.weekId}`);
+  }
+
+  /** weekly reward is claimable once per week; reward scales with your rank in the board */
+  weeklyRewardClaimable(): boolean { return this.state.weeklyRewardWeek !== this.weeklyId(); }
+  /** gems for a given weekly rank (1-based); 0 if not ranked */
+  weeklyRewardGems(rank: number): number {
+    if (rank <= 0) return 8;
+    if (rank === 1) return 100;
+    if (rank <= 3) return 60;
+    if (rank <= 10) return 40;
+    if (rank <= 50) return 20;
+    return 10;
+  }
+  claimWeeklyReward(rank: number): number {
+    if (!this.weeklyRewardClaimable()) return 0;
+    const gems = this.weeklyRewardGems(rank);
+    this.state.gems += gems;
+    this.state.weeklyRewardWeek = this.weeklyId();
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return gems;
   }
 
   setNotation(n: 'suffix' | 'scientific'): void {

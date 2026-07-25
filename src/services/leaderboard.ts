@@ -28,31 +28,34 @@ function baseUrl(): string {
   return `https://firestore.googleapis.com/v1/projects/${CLOUD_CONFIG.firebaseProjectId}/databases/(default)/documents`;
 }
 
-/** Submit (upsert) the player's score under their cloud code. */
-export async function submitScore(code: string, name: string, score: number): Promise<boolean> {
+/** Submit (upsert) the player's score under their cloud code, in a collection `bucket`
+ *  ('scores' = all-time, 'scores_w<n>' = a weekly board). */
+export async function submitScore(code: string, name: string, score: number, bucket = 'scores'): Promise<boolean> {
   const safeName = (name || 'Player').slice(0, 16);
   if (!isCloudConfigured()) {
-    try { localStorage.setItem(MOCK_PREFIX + code, JSON.stringify({ name: safeName, score })); return true; }
+    try { localStorage.setItem(`${MOCK_PREFIX}${bucket}::${code}`, JSON.stringify({ name: safeName, score })); return true; }
     catch { return false; }
   }
   try {
     const body = { fields: { name: { stringValue: safeName }, score: { integerValue: String(Math.floor(score)) } } };
-    const res = await fetch(`${baseUrl()}/scores/${encodeURIComponent(code)}?key=${CLOUD_CONFIG.firebaseApiKey}`, {
+    const res = await fetch(`${baseUrl()}/${bucket}/${encodeURIComponent(code)}?key=${CLOUD_CONFIG.firebaseApiKey}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     return res.ok;
   } catch { return false; }
 }
 
-/** Fetch the top N scores, highest first. Marks the caller's own row via `myCode`. */
-export async function topScores(limit = 20, myCode?: string): Promise<LbEntry[]> {
+/** Fetch the top N scores in `bucket`, highest first. Marks the caller's own row via `myCode`. */
+export async function topScores(limit = 20, myCode?: string, bucket = 'scores'): Promise<LbEntry[]> {
   if (!isCloudConfigured()) {
+    const prefix = `${MOCK_PREFIX}${bucket}::`;
     const entries: (LbEntry & { code: string })[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (!k || !k.startsWith(MOCK_PREFIX)) continue;
-      try { const v = JSON.parse(localStorage.getItem(k)!); entries.push({ name: v.name, score: v.score, code: k.slice(MOCK_PREFIX.length) }); } catch { /* skip */ }
+      if (!k || !k.startsWith(prefix)) continue;
+      try { const v = JSON.parse(localStorage.getItem(k)!); entries.push({ name: v.name, score: v.score, code: k.slice(prefix.length) }); } catch { /* skip */ }
     }
+    // seed weekly boards with demo entries too so they aren't empty
     const merged = [...DEMO.map((e) => ({ ...e, code: '' })), ...entries];
     merged.sort((a, b) => b.score - a.score);
     return merged.slice(0, limit).map((e) => ({ name: e.name, score: e.score, me: !!myCode && e.code === myCode }));
@@ -60,7 +63,7 @@ export async function topScores(limit = 20, myCode?: string): Promise<LbEntry[]>
   try {
     const q = {
       structuredQuery: {
-        from: [{ collectionId: 'scores' }],
+        from: [{ collectionId: bucket }],
         orderBy: [{ field: { fieldPath: 'score' }, direction: 'DESCENDING' }],
         limit,
       },
