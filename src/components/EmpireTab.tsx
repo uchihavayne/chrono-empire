@@ -230,22 +230,28 @@ export function EmpireTab({
         })}
       </div>
 
-      {/* Era Rush — a rotating ×N boost on one era; tap to jump there */}
-      <button className="era-rush-banner" onClick={() => setSelEra(rushIdx)}>
-        <span className="err-flame">🔥</span>
-        <span className="err-text">
-          <b>{t('era_rush')}</b> · {ERAS[rushIdx].icon} {t(`era_${ERAS[rushIdx].id}`)} ×{engine.eraRushMult()}
-        </span>
-        <span className="err-time">⏱ {formatDuration(engine.eraRushTimeLeftMs() / 1000)}</span>
-      </button>
+      {/* Advanced systems stay hidden until the 2nd era unlocks, so a brand-new player sees a
+          focused buy-and-earn screen instead of a wall of mechanics they don't have yet. */}
+      {s.erasUnlocked >= 2 && (
+        <>
+          {/* Era Rush — a rotating ×N boost on one era; tap to jump there */}
+          <button className="era-rush-banner" onClick={() => setSelEra(rushIdx)}>
+            <span className="err-flame">🔥</span>
+            <span className="err-text">
+              <b>{t('era_rush')}</b> · {ERAS[rushIdx].icon} {t(`era_${ERAS[rushIdx].id}`)} ×{engine.eraRushMult()}
+            </span>
+            <span className="err-time">⏱ {formatDuration(engine.eraRushTimeLeftMs() / 1000)}</span>
+          </button>
 
-      {/* era set-collection bonus banner */}
-      <div className={`set-banner${setComplete ? ' active' : ''}`}>
-        <span className="set-badge">{setComplete ? '⭐' : '☆'}</span>
-        <span className="set-text">
-          <b>{setComplete ? t('set_done') : t('set_bonus')}</b> · {t('set_bonus_desc')}
-        </span>
-      </div>
+          {/* era set-collection bonus banner */}
+          <div className={`set-banner${setComplete ? ' active' : ''}`}>
+            <span className="set-badge">{setComplete ? '⭐' : '☆'}</span>
+            <span className="set-text">
+              <b>{setComplete ? t('set_done') : t('set_bonus')}</b> · {t('set_bonus_desc')}
+            </span>
+          </div>
+        </>
+      )}
 
       <div className="amount-row">
         {AMOUNTS.map((a) => (

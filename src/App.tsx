@@ -256,8 +256,10 @@ export default function App() {
             </div>
           )}
 
-          {/* compact live-ops row: Season Pass, Time Keeper boss, Event World — one tappable
-              tile each, replacing the old stack of three full-width banners */}
+          {/* Compact live-ops row: Season Pass, Time Keeper boss, Event World — one tappable tile
+              each. Hidden for brand-new players (until the 2nd era) so the first minutes stay
+              focused on the core buy-and-earn loop instead of a wall of systems. */}
+          {s.erasUnlocked >= 2 && (
           <div className="events-row">
             <button className="event-tile sp" onClick={() => setShowSeason(true)}>
               <span className="et-emblem">🏆</span>
@@ -281,6 +283,7 @@ export default function App() {
               <span className="et-meta">⏱ {formatDuration(engine.eventTimeLeftMs() / 1000)}</span>
             </button>
           </div>
+          )}
 
           {/* content */}
           <div className="content">
