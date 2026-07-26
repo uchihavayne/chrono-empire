@@ -27,6 +27,8 @@ export interface ProductDef {
   kind: IapKind;
   /** consumable payout: Gems 💠 granted on purchase (buys card boxes) */
   gems?: number;
+  /** consumable payout: Time Warp Tickets ⏩ granted on purchase */
+  warp?: number;
   /** emoji shown on the store card */
   icon: string;
 }
@@ -37,6 +39,7 @@ export const PRODUCTS: ProductDef[] = [
   { id: 'vip_monthly',  kind: 'sub',        icon: '⭐' }, // VIP: 2x income + no ads + daily gems
   { id: 'starter_pack', kind: 'noncon',     icon: '🎁' },
   { id: 'season_pass',  kind: 'consumable', icon: '🎟️' }, // premium Season Pass (per-season)
+  { id: 'warp_pack',    kind: 'consumable', warp: 10,   icon: '⏩' }, // 10 Time Warp Tickets
   { id: 'gems_small',   kind: 'consumable', gems: 120,  icon: '💠' },
   { id: 'gems_medium',  kind: 'consumable', gems: 650,  icon: '💠' },
   { id: 'gems_large',   kind: 'consumable', gems: 2000, icon: '💠' },

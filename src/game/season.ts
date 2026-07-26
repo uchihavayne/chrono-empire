@@ -57,12 +57,13 @@ export function assignTasks(incomePerSec: number, rng: () => number = Math.rando
 }
 
 // ─── reward track ───
-export type RewardKind = 'cash' | 'gems' | 'card' | 'boost';
+export type RewardKind = 'cash' | 'gems' | 'card' | 'boost' | 'warp';
 export interface Reward { kind: RewardKind; amount: number }
 
 /** FREE-track reward for a tier (modest) */
 export function seasonFreeReward(tier: number): Reward {
   if (tier % 10 === 0) return { kind: 'gems', amount: 25 };
+  if (tier === 15) return { kind: 'warp', amount: 1 };  // one free Time Warp Ticket taste
   if (tier % 5 === 0) return { kind: 'card', amount: 3 };
   if (tier % 3 === 0) return { kind: 'gems', amount: 8 };
   return { kind: 'cash', amount: 900 }; // income-relative in the engine
@@ -70,6 +71,7 @@ export function seasonFreeReward(tier: number): Reward {
 /** PREMIUM-track reward for a tier (buyer value: gems most tiers) */
 export function seasonPremiumReward(tier: number): Reward {
   if (tier % 10 === 0) return { kind: 'gems', amount: 60 };
+  if (tier % 8 === 0) return { kind: 'warp', amount: 2 };  // Time Warp Tickets at 8/16/24
   if (tier % 4 === 0) return { kind: 'boost', amount: 60 };
   if (tier % 3 === 0) return { kind: 'card', amount: 5 };
   return { kind: 'gems', amount: 12 };

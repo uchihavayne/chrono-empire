@@ -1,14 +1,19 @@
 import { TIMEWARP_HOURS } from '../game/data';
-import { formatDuration } from '../game/format';
+import { formatDuration, formatNumber } from '../game/format';
 import { useGame, useT, useWatchAd } from '../hooks';
 import { Modal } from './Modals';
 
-export function BoostsModal({ onClose }: { onClose: () => void }) {
+export function BoostsModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const engine = useGame();
   const t = useT();
   const watchAd = useWatchAd();
   const s = engine.state;
   const now = Date.now();
+
+  const useTicket = () => {
+    const gained = engine.useWarpTicket();
+    if (gained != null) onToast(`⏩ +${formatNumber(gained, s.notation)} 💰`);
+  };
 
   const offers: {
     id: string; icon: string; title: string; desc: string;
@@ -38,6 +43,17 @@ export function BoostsModal({ onClose }: { onClose: () => void }) {
     <Modal>
       <div className="m-icon">📺</div>
       <h3>{t('ads_title')}</h3>
+      {/* Time Warp Tickets — a stockpile-able consumable (from Season Pass / shop) */}
+      <div className="row-card" style={{ textAlign: 'start', borderColor: '#8d6bff' }}>
+        <div className="icon-tile">⏩</div>
+        <div className="info">
+          <div className="title">{t('warp_ticket_t')} · {s.warpTickets}</div>
+          <div className="desc">{s.warpTickets > 0 ? t('warp_ticket_d', { h: engine.warpHours() }) : t('warp_ticket_empty')}</div>
+        </div>
+        <button className="action-btn" disabled={s.warpTickets <= 0} onClick={useTicket}>
+          {t('warp_ticket_use')}
+        </button>
+      </div>
       {offers.map((o) => (
         <div className="row-card" key={o.id} style={{ textAlign: 'start' }}>
           <div className="icon-tile">{o.icon}</div>

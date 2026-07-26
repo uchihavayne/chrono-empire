@@ -337,7 +337,7 @@ export default function App() {
           </div>
 
           {/* modals */}
-          {showBoosts && <BoostsModal onClose={() => setShowBoosts(false)} />}
+          {showBoosts && <BoostsModal onClose={() => setShowBoosts(false)} onToast={onToast} />}
 
           {engine.offlineReport && (
             <Modal>

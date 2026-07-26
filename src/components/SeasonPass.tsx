@@ -16,6 +16,7 @@ function rewardLabel(t: TFunc, r: Reward): string {
   if (r.kind === 'gems') return `💠 ${r.amount}`;
   if (r.kind === 'boost') return `⚡ ${r.amount}m`;
   if (r.kind === 'card') return `🃏 ${r.amount}`;
+  if (r.kind === 'warp') return `⏩ ${r.amount}`;
   return '';
 }
 

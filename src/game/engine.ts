@@ -7,7 +7,7 @@ import {
   INVESTORS, INVESTOR_BY_ID, OFFLINE_CAP_BASE_HOURS, QUESTS, RANK_BONUS_PER_TIER,
   RUSH_FLIGHT_S, RUSH_FRENZY_MULT, RUSH_FRENZY_S, RUSH_MAX_GAP_S, RUSH_MIN_GAP_S,
   SET_BONUS_COUNT, SET_BONUS_MULT, SKILLS, SKILL_BY_ID,
-  TIMEWARP_COOLDOWN_MIN, TIMEWARP_HOURS,
+  TIMEWARP_COOLDOWN_MIN, TIMEWARP_HOURS, WARP_TICKET_HOURS,
   UPGRADES, UPGRADE_BY_ID, crystalsForRun, milestoneMult, milestoneSpeed, rankIndex, skillCost,
   ASCEND_MIN_REBIRTHS, EON_BASE, EON_INCOME_BONUS, EON_CRYSTAL_BONUS, eonsForAscension,
   seasonalEvent, type SeasonalEvent,
@@ -69,6 +69,8 @@ export interface GameState {
   achievements: string[];
   boostUntil: number;
   timewarpReadyAt: number;
+  /** stockpile-able Time Warp Tickets (each = WARP_TICKET_HOURS of instant income) */
+  warpTickets: number;
   crystalAdReadyAt: number;
   /** timestamp when the free "watch ad for gems" is next available */
   gemAdReadyAt: number;
@@ -215,7 +217,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 14;
+const VERSION = 15;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -317,6 +319,8 @@ function migrate(save: any): any {
   if (typeof save.lastStatSampleAt !== 'number') save.lastStatSampleAt = 0;
   // v13→v14: away-reminder notifications (opt-out toggle, default on).
   if (typeof save.notifsOn !== 'boolean') save.notifsOn = true;
+  // v14→v15: Time Warp Tickets.
+  if (typeof save.warpTickets !== 'number') save.warpTickets = 0;
   save.version = VERSION;
   return save;
 }
@@ -352,6 +356,7 @@ function defaultState(): GameState {
     achievements: [],
     boostUntil: 0,
     timewarpReadyAt: 0,
+    warpTickets: 0,
     crystalAdReadyAt: 0,
     gemAdReadyAt: 0,
     lastSeen: Date.now(),
@@ -607,6 +612,8 @@ export class GameEngine {
       this.state.vip = true;
     } else if (productId === 'season_pass') {
       this.unlockSeasonPremium();
+    } else if (p.warp) {
+      this.state.warpTickets += p.warp;
     } else if (p.gems) {
       this.state.gems += p.gems;
     }
@@ -1611,6 +1618,32 @@ export class GameEngine {
     return gained;
   }
 
+  // ─── Time Warp Tickets: a stockpile-able consumable (earned via Season Pass / IAP) that
+  //     instantly banks WARP_TICKET_HOURS of production — stronger than the free ad warp. ───
+  warpHours(): number { return WARP_TICKET_HOURS; }
+
+  /** grant tickets from any source (Season Pass rewards, IAP pack, …) */
+  grantWarpTickets(n: number): void {
+    if (n <= 0) return;
+    this.state.warpTickets += n;
+    this.save();
+    this.emit();
+  }
+
+  /** spend one ticket for an instant chunk of income; returns the cash gained, or null if none */
+  useWarpTicket(): number | null {
+    if (this.state.warpTickets <= 0) return null;
+    const income = this.totalIncomePerSec();
+    if (income <= 0) return null;
+    const gained = income * WARP_TICKET_HOURS * 3600;
+    this.state.warpTickets--;
+    this.earn(gained);
+    if (this.state.sfxOn) audio.sfxReward();
+    this.save();
+    this.emit();
+    return gained;
+  }
+
   crystalAdReady(): boolean {
     return Date.now() >= this.state.crystalAdReadyAt;
   }
@@ -2014,6 +2047,7 @@ export class GameEngine {
       case 'gems': this.state.gems += r.amount; break;
       case 'boost': { const base = Math.max(Date.now(), this.state.boostUntil); this.state.boostUntil = base + r.amount * 60_000; break; }
       case 'card': this.grantCards(rollBox('uncommon').slice(0, r.amount)); break;
+      case 'warp': this.state.warpTickets += r.amount; break;
     }
   }
 
