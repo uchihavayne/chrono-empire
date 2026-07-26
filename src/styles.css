@@ -605,6 +605,27 @@ body {
 .stat-graph .sg-cur { font-size: 13px; font-weight: 800; }
 .stat-graph .sg-svg { display: block; width: 100%; height: 60px; }
 .stat-graph.empty .sg-wait { text-align: center; color: var(--text-dim); font-size: 18px; letter-spacing: 3px; padding: 14px 0 10px; opacity: 0.5; }
+
+/* Codex milestones */
+.codex-grid { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.codex-cell {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px;
+  border: 1px solid var(--card-border); background: var(--card); opacity: 0.62;
+}
+.codex-cell.ready { opacity: 1; border-color: var(--green); box-shadow: 0 0 12px rgba(69,224,138,0.28); }
+.codex-cell.done { opacity: 1; border-color: rgba(224,184,74,0.5); background: linear-gradient(150deg, rgba(224,184,74,0.1), transparent); }
+.codex-cell .cx-icon { font-size: 22px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); flex-shrink: 0; }
+.codex-cell .cx-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.codex-cell .cx-title { font-weight: 800; font-size: 12.5px; }
+.codex-cell .cx-bonus { font-size: 10px; font-weight: 700; color: var(--text-dim); }
+.codex-cell .cx-prog { font-size: 11px; font-weight: 700; color: var(--text-dim); flex-shrink: 0; }
+.codex-cell .cx-status { font-size: 16px; color: var(--gold, #e0b84a); flex-shrink: 0; }
+.codex-cell .cx-claim {
+  flex-shrink: 0; border: none; border-radius: 18px; padding: 6px 12px; font-family: inherit;
+  font-weight: 800; font-size: 12px; color: #10131f; background: linear-gradient(120deg, #ffd66a, #f0a838);
+  cursor: pointer; box-shadow: 0 2px 8px rgba(240,168,56,0.4); animation: festivalPulse 1.8s ease-in-out infinite;
+}
+.codex-cell .cx-claim:active { transform: scale(0.96); }
 select, .text-input {
   width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--card-border);
   background: #10131f; color: var(--text); font-size: 14px; margin-bottom: 8px;

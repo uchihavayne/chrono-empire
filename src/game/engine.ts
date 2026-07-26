@@ -36,8 +36,9 @@ import { PRODUCT_BY_ID, VIP_DAILY_GEMS } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
 import {
   BOX_BY_ID, CARD_BY_ID, CARDS_BY_RARITY, FUSION_COST, cardManagerUnlocked, cardProfitMult,
-  FREE_BOX_PER_DAY, MANAGER_CARD_REQ, MAX_BOXES_PER_DAY, nextRarity, rollBox,
+  FREE_BOX_PER_DAY, MANAGER_CARD_REQ, MAX_BOXES_PER_DAY, nextCardTier, nextRarity, rollBox,
 } from './cards';
+import { CODEX_ENTRIES, CODEX_BY_ID, type CodexCat, type CodexEntry } from './codex';
 
 export interface GeneratorState {
   count: number;
@@ -196,6 +197,8 @@ export interface GameState {
   bossEndsAt: number;
   bossEarnedAmt: number;
   bossTarget: number;
+  /** claimed Codex milestone ids (each grants a permanent global bonus) */
+  codexClaimed: string[];
   // ─── stats history (A7) ───
   /** rolling samples of income/sec + total crystals for the stats graphs */
   incomeHistory: number[];
@@ -217,7 +220,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 15;
+const VERSION = 16;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -321,6 +324,8 @@ function migrate(save: any): any {
   if (typeof save.notifsOn !== 'boolean') save.notifsOn = true;
   // v14→v15: Time Warp Tickets.
   if (typeof save.warpTickets !== 'number') save.warpTickets = 0;
+  // v15→v16: Codex / Chronicle milestones.
+  if (!Array.isArray(save.codexClaimed)) save.codexClaimed = [];
   save.version = VERSION;
   return save;
 }
@@ -436,6 +441,7 @@ function defaultState(): GameState {
     bossEndsAt: 0,
     bossEarnedAmt: 0,
     bossTarget: 0,
+    codexClaimed: [],
     incomeHistory: [],
     crystalHistory: [],
     lastStatSampleAt: 0,
@@ -836,6 +842,7 @@ export class GameEngine {
     m *= 1 + this.relicLevel('relic_income') * RELIC_BY_ID['relic_income'].value; // expedition relic
     m *= 1 + this.skillLevel('crit_income') * 0.04; // Critical Income skill
     m *= 1 + this.eonLevel('eon_power') * EON_UPGRADE_BY_ID['eon_power'].value; // Eon Upgrade
+    m *= this.codexMult(); // permanent Codex milestone bonuses
     if (this.state.starterPack) m *= 2; // permanent IAP boost
     if (this.state.vip) m *= 2; // VIP subscription perk
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
@@ -892,6 +899,47 @@ export class GameEngine {
     this.save();
     this.emit();
     return gems;
+  }
+
+  // ─── Codex / Chronicle: milestone checklist over existing content ───
+  /** number of cards the player has fully maxed (count ≥ top tier) */
+  private maxedCardCount(): number {
+    let n = 0;
+    for (const id in this.state.cards) {
+      if ((this.state.cards[id] ?? 0) > 0 && nextCardTier(this.state.cards[id]) === null) n++;
+    }
+    return n;
+  }
+  /** current progress value for a Codex category */
+  codexProgress(cat: CodexCat): number {
+    switch (cat) {
+      case 'era': return this.state.erasUnlocked;
+      case 'boss': return this.state.bossesDefeated.length;
+      case 'card': return this.maxedCardCount();
+      case 'rebirth': return this.state.rebirths;
+      case 'ascend': return this.state.ascensions;
+    }
+  }
+  codexMet(e: CodexEntry): boolean { return this.codexProgress(e.cat) >= e.need; }
+  codexClaimed(id: string): boolean { return this.state.codexClaimed.includes(id); }
+  /** permanent global income multiplier from all claimed Codex milestones */
+  codexMult(): number {
+    let m = 1;
+    for (const id of this.state.codexClaimed) m += CODEX_BY_ID[id]?.bonus ?? 0;
+    return m;
+  }
+  codexClaimable(): number {
+    return CODEX_ENTRIES.filter((e) => this.codexMet(e) && !this.codexClaimed(e.id)).length;
+  }
+  claimCodex(id: string): number {
+    const e = CODEX_BY_ID[id];
+    if (!e || this.codexClaimed(id) || !this.codexMet(e)) return 0;
+    this.state.codexClaimed.push(id);
+    this.state.gems += e.gems;
+    if (this.state.sfxOn) audio.sfxUnlock();
+    this.save();
+    this.emit();
+    return e.gems;
   }
 
   cycleSpeedMult(): number {

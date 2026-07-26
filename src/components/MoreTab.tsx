@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, ACH_TIER_GEMS, ACH_TIER_MEDAL, achTier, DAILY_REWARDS } from '../game/data';
 import { CHALLENGES } from '../game/challenge';
+import { CODEX_ENTRIES } from '../game/codex';
 import { SKINS } from '../game/skins';
 import { formatNumber, formatDuration } from '../game/format';
 import { LANG_NAMES } from '../i18n';
@@ -33,6 +34,7 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
   const [showImport, setShowImport] = useState(false);
   const [showAch, setShowAch] = useState(false);
   const [showChal, setShowChal] = useState(false);
+  const [showCodex, setShowCodex] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
@@ -160,6 +162,38 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
               </div>
             );
           })}
+        </>
+      )}
+
+      {/* Codex — completion milestones over eras / bosses / cards / prestige */}
+      <button className="collapse-head" onClick={() => setShowCodex((v) => !v)}>
+        <span>📜 {t('codex_title')}{engine.codexClaimable() > 0 && <span className="challenge-badge">{engine.codexClaimable()}</span>}</span>
+        <span className="collapse-sub">{showCodex ? '▲' : '▼'}</span>
+      </button>
+      {showCodex && (
+        <>
+          <p className="hint">{t('codex_hint', { n: Math.round((engine.codexMult() - 1) * 100) })}</p>
+          <div className="codex-grid">
+            {CODEX_ENTRIES.map((e) => {
+              const claimed = engine.codexClaimed(e.id);
+              const met = engine.codexMet(e);
+              const prog = engine.codexProgress(e.cat);
+              return (
+                <div key={e.id} className={`codex-cell${claimed ? ' done' : met ? ' ready' : ''}`}>
+                  <span className="cx-icon">{e.icon}</span>
+                  <div className="cx-info">
+                    <span className="cx-title">{t(`codex_${e.cat}`, { n: e.need })}</span>
+                    <span className="cx-bonus">+{(e.bonus * 100).toFixed(1).replace(/\.0$/, '')}% · {t(`codex_l_${e.cat}`)}</span>
+                  </div>
+                  {claimed
+                    ? <span className="cx-status">✓</span>
+                    : met
+                      ? <button className="cx-claim" onClick={() => { const g = engine.claimCodex(e.id); if (g) onToast(`+${g} 💠`); }}>💠 {e.gems}</button>
+                      : <span className="cx-prog">{prog}/{e.need}</span>}
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
 
