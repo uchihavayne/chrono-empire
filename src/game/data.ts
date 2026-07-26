@@ -574,8 +574,11 @@ export function eraRushEndsAt(now = Date.now()): number {
 //     point takes far more lifetime cash, which means more prestige crystals. There is no cash-out
 //     multiplier, so it can't be gamed by cranking the level up right before a rebirth. ───
 export const PARADOX_MAX = 5;
+// Costs rise TWICE as fast as income (×4 vs ×2 per level). This keeps crystals-per-hour roughly
+// NEUTRAL — reaching a given era takes ~2^L longer but banks ~2^L more crystals — so Paradox is a
+// genuine challenge (grindier, bigger single rebirths) and never a crystal-farming shortcut.
 export const paradoxCostMult = (lvl: number) => Math.pow(4, lvl);   // costs ×4^level
-export const paradoxIncomeMult = (lvl: number) => Math.pow(3, lvl); // income ×3^level
+export const paradoxIncomeMult = (lvl: number) => Math.pow(2, lvl); // income ×2^level
 
 // ─── Business Mastery: each venture levels up from TOTAL lifetime units bought (persists across
 //     rebirths), granting a small permanent per-venture output bonus. A pure long-tail sink. ───
