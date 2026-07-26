@@ -11,6 +11,7 @@ import {
   UPGRADES, UPGRADE_BY_ID, crystalsForRun, milestoneMult, milestoneSpeed, rankIndex, skillCost,
   ASCEND_MIN_REBIRTHS, EON_BASE, EON_INCOME_BONUS, EON_CRYSTAL_BONUS, eonsForAscension,
   seasonalEvent, type SeasonalEvent,
+  ERA_RUSH_MULT, eraRushId, eraRushEndsAt,
   type GeneratorDef, type QuestDef,
 } from './data';
 import { audio } from '../services/audio';
@@ -872,8 +873,15 @@ export class GameEngine {
     m *= this.investorEraMult(era);
     m *= 1 + this.skillLevel('combo_master') * 0.05; // Combo Master skill
     if (this.state.albumsClaimed.includes(era)) m *= 1 + ALBUM_BONUS; // completed card album
+    if (era === this.eraRushIndex()) m *= ERA_RUSH_MULT; // rotating Era Rush boost
     return m;
   }
+
+  // ─── Era Rush: a rotating ×N boost on one era, always active (purely time-derived) ───
+  /** which of the player's unlocked eras is currently boosted */
+  eraRushIndex(): number { return eraRushId() % Math.max(1, this.state.erasUnlocked); }
+  eraRushMult(): number { return ERA_RUSH_MULT; }
+  eraRushTimeLeftMs(): number { return Math.max(0, eraRushEndsAt() - Date.now()); }
 
   // ─── card albums (collect every card in an era) ───
   /** collected ≥1 of every venture's card in the era */

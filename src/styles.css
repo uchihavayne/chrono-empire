@@ -1002,6 +1002,25 @@ select, .text-input {
   box-shadow: 0 0 14px rgba(var(--acc-rgb),0.35);
 }
 .era-chip.locked { opacity: 0.45; cursor: default; }
+.era-chip.rushing { position: relative; border-color: #ff7a3c; box-shadow: 0 0 12px rgba(255,122,60,0.45); }
+.era-chip-fire { position: absolute; top: -7px; right: -3px; font-size: 12px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+
+/* Era Rush banner */
+.era-rush-banner {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 10px;
+  padding: 7px 11px; border-radius: 12px; font-family: inherit; color: var(--text);
+  text-align: left; cursor: pointer;
+  border: 1px solid rgba(255,140,60,0.55);
+  background:
+    radial-gradient(circle at 10% 50%, rgba(255,140,60,0.26), transparent 60%),
+    linear-gradient(120deg, rgba(60,26,12,0.6), rgba(120,50,20,0.35));
+  box-shadow: 0 0 14px rgba(255,120,50,0.25); animation: festivalPulse 2.2s ease-in-out infinite;
+}
+.era-rush-banner:active { transform: scale(0.99); }
+.era-rush-banner .err-flame { font-size: 18px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.era-rush-banner .err-text { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.era-rush-banner .err-text b { color: #ff9d5c; }
+.era-rush-banner .err-time { font-size: 10.5px; font-weight: 800; color: #ffcaa0; white-space: nowrap; flex-shrink: 0; }
 
 /* ─── unlock next era card ─── */
 .unlock-card {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ERAS, GENERATORS, milestoneMult, nextMilestone, type GeneratorDef } from '../game/data';
-import { formatNumber } from '../game/format';
+import { formatNumber, formatDuration } from '../game/format';
 import { useGame, useT } from '../hooks';
 import type { BuyAmount } from '../game/engine';
 import { GenIcon } from './icons';
@@ -137,6 +137,7 @@ export function EmpireTab({
   const sel = Math.min(viewedEra, s.erasUnlocked - 1);
   const gens = GENERATORS.filter((g) => g.era === sel);
   const setComplete = engine.eraSetComplete(sel);
+  const rushIdx = engine.eraRushIndex();
 
   // keep the selected era chip scrolled into view
   useEffect(() => {
@@ -176,15 +177,25 @@ export function EmpireTab({
             <button
               key={e.id}
               ref={i === sel ? activeChip : undefined}
-              className={`era-chip${i === sel ? ' active' : ''}${unlocked ? '' : ' locked'}`}
+              className={`era-chip${i === sel ? ' active' : ''}${unlocked ? '' : ' locked'}${unlocked && i === rushIdx ? ' rushing' : ''}`}
               onClick={() => unlocked && setSelEra(i)}
             >
+              {unlocked && i === rushIdx && <span className="era-chip-fire">🔥</span>}
               <span className="era-chip-icon">{unlocked ? e.icon : '🔒'}</span>
               <span className="era-chip-name">{unlocked ? t(`era_${e.id}`) : `${i + 1}`}</span>
             </button>
           );
         })}
       </div>
+
+      {/* Era Rush — a rotating ×N boost on one era; tap to jump there */}
+      <button className="era-rush-banner" onClick={() => setSelEra(rushIdx)}>
+        <span className="err-flame">🔥</span>
+        <span className="err-text">
+          <b>{t('era_rush')}</b> · {ERAS[rushIdx].icon} {t(`era_${ERAS[rushIdx].id}`)} ×{engine.eraRushMult()}
+        </span>
+        <span className="err-time">⏱ {formatDuration(engine.eraRushTimeLeftMs() / 1000)}</span>
+      </button>
 
       {/* era set-collection bonus banner */}
       <div className={`set-banner${setComplete ? ' active' : ''}`}>

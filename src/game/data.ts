@@ -556,6 +556,19 @@ export function seasonalEvent(now: Date = new Date()): SeasonalEvent | null {
   return null;
 }
 
+// ─── Era Rush: a rotating ×N boost on ONE era's businesses. Always active; the boosted era
+//     rotates every ERA_RUSH_DAYS so a returning player always finds a fresh era to pour into. ───
+export const ERA_RUSH_DAYS = 2;
+export const ERA_RUSH_MULT = 5;
+const ERA_RUSH_EPOCH = Date.UTC(2026, 0, 1);
+export const ERA_RUSH_MS = ERA_RUSH_DAYS * 86_400_000;
+export function eraRushId(now = Date.now()): number {
+  return Math.floor((now - ERA_RUSH_EPOCH) / ERA_RUSH_MS);
+}
+export function eraRushEndsAt(now = Date.now()): number {
+  return ERA_RUSH_EPOCH + (eraRushId(now) + 1) * ERA_RUSH_MS;
+}
+
 // ─── Ads / boosts ───
 export const AD_BOOST_BASE_HOURS = 3;   // ×2 boost duration (was 4h)
 export const TIMEWARP_HOURS = 1;        // instant-collect ad = 1h of production (was 2h)
