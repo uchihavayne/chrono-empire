@@ -363,6 +363,18 @@ body {
   15% { opacity: 1; transform: translateY(0) scale(1.1); }
   100% { opacity: 0; transform: translateY(-30px) scale(1); }
 }
+/* coin spray on buy — spawns from the icon and fans outward, upward */
+.coin-burst { position: absolute; left: 52px; top: 34px; width: 0; height: 0; pointer-events: none; z-index: 6; }
+.coin-burst span {
+  position: absolute; left: 0; top: 0; font-size: 15px;
+  animation: coinBurst 0.68s cubic-bezier(.25,.7,.4,1) forwards;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+}
+@keyframes coinBurst {
+  0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(0.5); }
+  20% { opacity: 1; transform: rotate(var(--a)) translateY(-22px) scale(1.15); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-54px) scale(0.7); }
+}
 
 /* ─── generic rows ─── */
 .row-card {

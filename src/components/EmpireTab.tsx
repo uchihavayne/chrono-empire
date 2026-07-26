@@ -17,6 +17,26 @@ function GeneratorCard({ g, amount }: { g: GeneratorDef; amount: BuyAmount }) {
   const notation = engine.state.notation;
   const { count: buyN, cost } = engine.buyCost(g.id, amount);
   const affordable = engine.state.cash >= cost;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const iconRef = useRef<HTMLButtonElement>(null);
+  const [burst, setBurst] = useState(0);
+
+  // satisfying buy feedback: a squash-pop on the card, a bump on the count badge, and a
+  // short coin spray from the icon. Web Animations API replays cleanly on every tap.
+  const handleBuy = () => {
+    if (!affordable) return;
+    engine.buyGenerator(g.id, amount);
+    setBurst((b) => b + 1);
+    cardRef.current?.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.035)' }, { transform: 'scale(1)' }],
+      { duration: 240, easing: 'ease-out' },
+    );
+    badgeRef.current?.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.5)' }, { transform: 'scale(1)' }],
+      { duration: 300, easing: 'cubic-bezier(.2,1.4,.4,1)' },
+    );
+  };
   const effCycle = engine.effectiveCycle(g);
   const continuous = gs.hasManager && effCycle <= 0.35;
   // live countdown: seconds remaining in the CURRENT cycle, falling with the fill.
@@ -45,6 +65,10 @@ function GeneratorCard({ g, amount }: { g: GeneratorDef; amount: BuyAmount }) {
     if (gs.count === 0 || gs.hasManager || gs.running) return;
     const revenue = engine.cycleRevenue(g);
     engine.runGenerator(g.id);
+    iconRef.current?.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(0.88)' }, { transform: 'scale(1)' }],
+      { duration: 200, easing: 'ease-out' },
+    );
     if (effCycle <= 0.35) {
       pushFloat(revenue);
     } else {
@@ -53,13 +77,20 @@ function GeneratorCard({ g, amount }: { g: GeneratorDef; amount: BuyAmount }) {
   };
 
   return (
-    <div className="gen-card">
+    <div className="gen-card" ref={cardRef}>
       {floats.map((f) => (
         <span key={f.id} className="float-num">{f.text}</span>
       ))}
-      <button className="gen-icon" onClick={onRun} aria-label={t(`gen_${g.id}`)}>
+      {burst > 0 && (
+        <div className="coin-burst" key={burst}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} style={{ ['--a' as string]: `${-90 + (i - 2.5) * 20}deg` }}>🪙</span>
+          ))}
+        </div>
+      )}
+      <button className="gen-icon" ref={iconRef} onClick={onRun} aria-label={t(`gen_${g.id}`)}>
         <GenIcon id={g.id} size={60} />
-        <span className="count-badge">{gs.count}</span>
+        <span className="count-badge" ref={badgeRef}>{gs.count}</span>
       </button>
       <div className="gen-mid">
         <div className="gen-name">{t(`gen_${g.id}`)}</div>
@@ -88,7 +119,7 @@ function GeneratorCard({ g, amount }: { g: GeneratorDef; amount: BuyAmount }) {
           {gs.count > 0 && <span className="bar-time">⏱ {cycleLabel}</span>}
         </div>
       </div>
-      <button className="buy-btn" disabled={!affordable} onClick={() => engine.buyGenerator(g.id, amount)}>
+      <button className="buy-btn" disabled={!affordable} onClick={handleBuy}>
         {t('buy')} ×{buyN}
         <span className="sub">{formatNumber(cost, notation)}</span>
       </button>
