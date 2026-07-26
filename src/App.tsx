@@ -5,7 +5,7 @@ import { isRTL, makeT } from './i18n';
 import { AdContext, TContext, useGame } from './hooks';
 import { registerAdSimulator, showRewardedAd } from './services/ads';
 import { registerPurchaseSimulator, PRODUCT_BY_ID } from './services/iap';
-import { scheduleRetention, cancelRetention } from './services/notify';
+import { scheduleReminders, cancelReminders } from './services/notify';
 import { EmpireTab } from './components/EmpireTab';
 import { CardsTab } from './components/CardsTab';
 import { RebirthTab } from './components/RebirthTab';
@@ -106,18 +106,32 @@ export default function App() {
     );
   }, []);
 
-  // away-reminder notifications: schedule on background, clear on return (native only)
+  // away-reminder notifications: schedule a game-state-aware set on background, clear on return
+  // (native only). Times track when there's actually something to come back for.
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
         engine.save();
-        void scheduleRetention([
-          { title: t('notif_t1'), body: t('notif_b1') },
-          { title: t('notif_t2'), body: t('notif_b2') },
-          { title: t('notif_t3'), body: t('notif_b3') },
-        ]);
+        if (!engine.state.notifsOn) { void cancelReminders(); return; }
+        const now = Date.now();
+        const HOUR = 3_600_000;
+        // 1) idle production maxes out at the offline cap (min 2h so it's a meaningful gap)
+        const capAt = now + Math.max(engine.offlineCapHours() * HOUR, 2 * HOUR);
+        // 2) daily reward + free wheel spin refresh at local midnight
+        const midnight = new Date(); midnight.setHours(24, 0, 30, 0);
+        const items = [
+          { id: 9001, title: t('notif_t1'), body: t('notif_b1'), at: capAt },
+          { id: 9002, title: t('notif_t2'), body: t('notif_b2'), at: midnight.getTime() },
+          { id: 9003, title: t('notif_t3'), body: t('notif_b3'), at: now + 72 * HOUR },
+        ];
+        // 3) festival ending soon — only if one is running with >2h left
+        const evLeft = engine.eventTimeLeftMs();
+        if (evLeft > 2 * HOUR) {
+          items.push({ id: 9004, title: t('notif_t4'), body: t('notif_b4'), at: now + evLeft - 2 * HOUR });
+        }
+        void scheduleReminders(items);
       } else {
-        void cancelRetention();
+        void cancelReminders();
       }
     };
     document.addEventListener('visibilitychange', onVis);

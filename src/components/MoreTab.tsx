@@ -7,6 +7,7 @@ import { LANG_NAMES } from '../i18n';
 import { useGame, useT } from '../hooks';
 import { ConfirmModal } from './Modals';
 import { StatGraph } from './StatGraph';
+import { requestNotifPermission } from '../services/notify';
 import { PRODUCTS, shopVisible } from '../services/iap';
 import { purchase as iapPurchase, restore as iapRestore } from '../services/iap';
 import type { LbEntry } from '../services/leaderboard';
@@ -354,6 +355,22 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         </div>
         <button className={`action-btn${s.sfxOn ? '' : ' purple'}`} onClick={() => engine.setSfx(!s.sfxOn)}>
           {s.sfxOn ? t('on') : t('off')}
+        </button>
+      </div>
+      <div className="row-card" style={{ marginTop: 6 }}>
+        <div className="icon-tile">🔔</div>
+        <div className="info">
+          <div className="title">{t('notif_toggle')}</div>
+        </div>
+        <button
+          className={`action-btn${s.notifsOn ? '' : ' purple'}`}
+          onClick={() => {
+            const next = !s.notifsOn;
+            engine.setNotifs(next);
+            if (next) void requestNotifPermission();
+          }}
+        >
+          {s.notifsOn ? t('on') : t('off')}
         </button>
       </div>
 

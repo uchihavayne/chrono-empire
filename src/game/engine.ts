@@ -93,6 +93,7 @@ export interface GameState {
   sfxOn: boolean;
   musicVol: number;    // 0..1 music volume
   sfxVol: number;      // 0..1 SFX volume
+  notifsOn: boolean;   // away-reminder push notifications (native only)
   notation: 'suffix' | 'scientific';
   createdAt: number;
   /** stable random code identifying this player's cloud backup slot */
@@ -214,7 +215,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 13;
+const VERSION = 14;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -314,6 +315,8 @@ function migrate(save: any): any {
   if (!Array.isArray(save.incomeHistory)) save.incomeHistory = [];
   if (!Array.isArray(save.crystalHistory)) save.crystalHistory = [];
   if (typeof save.lastStatSampleAt !== 'number') save.lastStatSampleAt = 0;
+  // v13→v14: away-reminder notifications (opt-out toggle, default on).
+  if (typeof save.notifsOn !== 'boolean') save.notifsOn = true;
   save.version = VERSION;
   return save;
 }
@@ -368,6 +371,7 @@ function defaultState(): GameState {
     sfxOn: true,
     musicVol: 1,
     sfxVol: 1,
+    notifsOn: true,
     notation: 'suffix',
     createdAt: Date.now(),
     cloudCode: makeCloudCode(),
@@ -1838,6 +1842,12 @@ export class GameEngine {
 
   setSfx(on: boolean): void {
     this.state.sfxOn = on;
+    this.save();
+    this.emit();
+  }
+
+  setNotifs(on: boolean): void {
+    this.state.notifsOn = on;
     this.save();
     this.emit();
   }
