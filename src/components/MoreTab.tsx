@@ -38,6 +38,8 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
   const [showStats, setShowStats] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [restoreCode, setRestoreCode] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoBusy, setPromoBusy] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
   const [buying, setBuying] = useState<string | null>(null);
   const [lb, setLb] = useState<LbEntry[]>([]);
@@ -68,6 +70,14 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
     setCloudBusy(false);
     if (r.ok) { onToast(t('cloud_restored')); setShowRestore(false); }
     else onToast(r.error === 'empty' ? t('cloud_empty') : t('cloud_fail'));
+  };
+  const redeem = async () => {
+    if (promoBusy || !promoCode.trim()) return;
+    setPromoBusy(true);
+    const r = await engine.redeemPromoCode(promoCode);
+    setPromoBusy(false);
+    if (r.status === 'ok') { onToast(t('promo_ok', { n: r.gems ?? 0 })); setPromoCode(''); }
+    else onToast(t(`promo_${r.status}`));
   };
   const buy = async (id: string) => {
     setBuying(id);
@@ -281,6 +291,23 @@ export function MoreTab({ onToast }: { onToast: (msg: string) => void }) {
         {t('shop_restore')}
       </button>
       </>}
+
+      {/* promo / gift codes */}
+      <div className="section-title">🎁 {t('promo_title')}</div>
+      <p className="hint">{t('promo_hint')}</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          className="text-input"
+          style={{ marginBottom: 0, flex: 1, textTransform: 'uppercase' }}
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value)}
+          placeholder={t('promo_placeholder')}
+          maxLength={24}
+        />
+        <button className="action-btn gold" disabled={promoBusy || !promoCode.trim()} onClick={redeem}>
+          {t('promo_redeem')}
+        </button>
+      </div>
 
       {/* cloud backup */}
       <div className="section-title">☁️ {t('cloud_title')}</div>

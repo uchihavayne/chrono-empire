@@ -34,7 +34,7 @@ import {
   SEASON_XP_PER_TIER, assignTasks, seasonEndsAt, seasonFreeReward, seasonId, seasonPremiumReward,
   seasonTierForXp, seasonTierXp, type SeasonTask,
 } from './season';
-import { cloudPull, cloudPush, type CloudResult } from '../services/cloud';
+import { cloudPull, cloudPush, redeemPromo, type CloudResult } from '../services/cloud';
 import { PRODUCT_BY_ID, VIP_DAILY_GEMS } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
 import {
@@ -206,6 +206,8 @@ export interface GameState {
   mastery: Record<string, number>;
   /** Paradox / NG+ difficulty level (0 = off) */
   paradox: number;
+  /** promo/gift codes already redeemed on this device (once-only) */
+  promosRedeemed: string[];
   // ─── stats history (A7) ───
   /** rolling samples of income/sec + total crystals for the stats graphs */
   incomeHistory: number[];
@@ -227,7 +229,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 18;
+const VERSION = 19;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -345,6 +347,8 @@ function migrate(save: any): any {
   }
   // v17→v18: Paradox / NG+ difficulty level.
   if (typeof save.paradox !== 'number') save.paradox = 0;
+  // v18→v19: promo/gift codes.
+  if (!Array.isArray(save.promosRedeemed)) save.promosRedeemed = [];
   save.version = VERSION;
   return save;
 }
@@ -463,6 +467,7 @@ function defaultState(): GameState {
     codexClaimed: [],
     mastery: {},
     paradox: 0,
+    promosRedeemed: [],
     incomeHistory: [],
     crystalHistory: [],
     lastStatSampleAt: 0,
@@ -621,6 +626,23 @@ export class GameEngine {
     } catch (e) {
       return { ok: false, error: String(e) };
     }
+  }
+
+  /** Redeem a promo/gift code for gems. Once-only per device; grants on success. */
+  async redeemPromoCode(rawCode: string): Promise<{ status: 'ok' | 'invalid' | 'expired' | 'error' | 'used'; gems?: number }> {
+    const code = rawCode.trim().toUpperCase();
+    if (!code) return { status: 'invalid' };
+    if (this.state.promosRedeemed.includes(code)) return { status: 'used' };
+    const res = await redeemPromo(code);
+    if (res.status === 'ok' && res.gems && res.gems > 0) {
+      this.state.gems += res.gems;
+      this.state.promosRedeemed.push(code);
+      if (this.state.sfxOn) audio.sfxReward();
+      this.save();
+      this.emit();
+      return { status: 'ok', gems: res.gems };
+    }
+    return { status: res.status };
   }
 
   // ─── in-app purchases ───

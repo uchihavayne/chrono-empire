@@ -69,6 +69,59 @@ export async function cloudPush(code: string, json: string): Promise<CloudResult
   }
 }
 
+// ─── Promo / gift codes ───────────────────────────────────────────────────────────────────────
+// Redeemable codes that grant gems. Two sources:
+//   1. BUILTIN_PROMOS — evergreen codes shipped in the app (always work, even offline).
+//   2. Firestore `promos/{CODE}` docs — campaign codes the creator adds in the console WITHOUT an
+//      app update. Fields: { gems: integer, active: boolean, expiresAt?: integer(ms, optional) }.
+// Add this read-only security rule in the Firebase console:
+//   match /promos/{code} { allow read: if true; allow write: if false; }
+// Per-device once-only redemption is enforced client-side (state.promosRedeemed).
+export const BUILTIN_PROMOS: Record<string, number> = {
+  CHRONO: 200,
+  WELCOME2026: 150,
+  TIMETRAVELER: 300,
+};
+
+export interface PromoResult {
+  status: 'ok' | 'invalid' | 'expired' | 'error';
+  gems?: number;
+}
+
+function promoUrl(code: string): string {
+  const { firebaseProjectId, firebaseApiKey } = CLOUD_CONFIG;
+  const path = `projects/${firebaseProjectId}/databases/(default)/documents/promos/${encodeURIComponent(code)}`;
+  return `https://firestore.googleapis.com/v1/${path}?key=${firebaseApiKey}`;
+}
+
+/** Look up a promo code (built-in first, then Firestore) and return its gem reward. */
+export async function redeemPromo(rawCode: string): Promise<PromoResult> {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return { status: 'invalid' };
+  // 1) evergreen built-in codes
+  if (BUILTIN_PROMOS[code] != null) return { status: 'ok', gems: BUILTIN_PROMOS[code] };
+  // 2) dynamic Firestore campaign codes (skip when no real cloud is configured)
+  if (isCloudMock()) return { status: 'invalid' };
+  try {
+    const res = await fetch(promoUrl(code), { method: 'GET' });
+    // 404 = no such code; 403 = not readable (e.g. promos rule not set) → both read as "invalid"
+    // to the player. Only a genuine transport/5xx failure surfaces as a retryable error.
+    if (res.status === 404 || res.status === 403) return { status: 'invalid' };
+    if (!res.ok) return { status: 'error' };
+    const doc = await res.json();
+    const f = doc?.fields ?? {};
+    const active = f.active?.booleanValue === true;
+    if (!active) return { status: 'invalid' };
+    const expiresAt = f.expiresAt?.integerValue ? Number(f.expiresAt.integerValue) : 0;
+    if (expiresAt && Date.now() > expiresAt) return { status: 'expired' };
+    const gems = f.gems?.integerValue ? Number(f.gems.integerValue) : 0;
+    if (gems <= 0) return { status: 'invalid' };
+    return { status: 'ok', gems };
+  } catch {
+    return { status: 'error' };
+  }
+}
+
 /** Download the save payload stored under a code (null data if the slot is empty). */
 export async function cloudPull(code: string): Promise<CloudResult> {
   if (isCloudMock()) {
