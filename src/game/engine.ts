@@ -35,6 +35,7 @@ import {
   seasonTierForXp, seasonTierXp, type SeasonTask,
 } from './season';
 import { cloudPull, cloudPush, redeemPromo, type CloudResult } from '../services/cloud';
+import { logEvent, logSession } from '../services/analytics';
 import { PRODUCT_BY_ID, VIP_DAILY_GEMS } from '../services/iap';
 import { submitScore, topScores, type LbEntry } from '../services/leaderboard';
 import {
@@ -666,6 +667,7 @@ export class GameEngine {
     } else if (p.gems) {
       this.state.gems += p.gems;
     }
+    logEvent('iap_purchase', { product: productId }); // revenue / conversion
     this.save();
     this.emit();
     return true;
@@ -690,6 +692,7 @@ export class GameEngine {
   // ─── lifecycle ───
   start(): void {
     if (this.tickHandle !== null) return;
+    logSession(); // first_open (once) + session_start (every launch)
     let last = performance.now();
     this.tickHandle = window.setInterval(() => {
       const now = performance.now();
@@ -750,6 +753,7 @@ export class GameEngine {
     if (cost === null || this.state.cash < cost) return false;
     this.state.cash -= cost;
     this.state.erasUnlocked++;
+    logEvent('era_unlock', { era: this.state.erasUnlocked }); // key funnel step
     if (this.state.sfxOn) audio.sfxUnlock();
     this.save();
     this.emit();
@@ -1568,6 +1572,7 @@ export class GameEngine {
   ascend(): void {
     if (!this.canAscend()) return;
     const s = this.state;
+    logEvent('ascension', { ascensions: s.ascensions + 1, eons: this.pendingEons() });
     s.eons += this.pendingEons();
     s.ascensions += 1;
     s.ascensionStartCrystals = s.totalCrystalsEarned;
@@ -1600,6 +1605,7 @@ export class GameEngine {
     const gained = this.pendingCrystals();
     if (gained < 1) return;
     const s = this.state;
+    logEvent('rebirth', { rebirths: s.rebirths + 1, crystals: gained }); // deep-funnel milestone
     s.crystals += gained;
     s.totalCrystalsEarned += gained;
     s.rebirths += 1;
@@ -1906,6 +1912,7 @@ export class GameEngine {
   }
 
   dismissTutorial(): void {
+    if (!this.state.tutorialDone) logEvent('tutorial_done'); // onboarding completion/skip
     this.state.tutorialDone = true;
     this.save();
     this.emit();

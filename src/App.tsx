@@ -4,6 +4,7 @@ import { formatDuration, formatNumber } from './game/format';
 import { isRTL, makeT } from './i18n';
 import { AdContext, TContext, useGame } from './hooks';
 import { registerAdSimulator, showRewardedAd } from './services/ads';
+import { logEvent } from './services/analytics';
 import { registerPurchaseSimulator, PRODUCT_BY_ID } from './services/iap';
 import { scheduleReminders, cancelReminders } from './services/notify';
 import { EmpireTab } from './components/EmpireTab';
@@ -166,7 +167,7 @@ export default function App() {
       // No-Ads Pass / VIP owners get the reward instantly, no ad shown.
       if (engine.adsRemoved()) { onReward(); return; }
       void showRewardedAd().then((ok) => {
-        if (ok) onReward();
+        if (ok) { logEvent('ad_view'); onReward(); } // rewarded-ad completion (ad revenue signal)
       });
     },
     [engine],
