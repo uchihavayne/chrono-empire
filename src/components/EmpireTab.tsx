@@ -69,6 +69,17 @@ function GeneratorCard({ g, amount }: { g: GeneratorDef; amount: BuyAmount }) {
             {t('next_bonus', { n: nextMilestone(gs.count) })} · <b>×{formatNumber(milestoneMult(gs.count), notation)}</b>
           </div>
         )}
+        {gs.count > 0 && (() => {
+          const mLvl = engine.masteryLevel(g.id);
+          const mNext = engine.masteryNext(g.id);
+          return (
+            <div className="gen-mastery">
+              🏅 {t('mastery_lv', { n: mLvl })}
+              {mLvl > 0 && <> · <b>+{Math.round(engine.masteryMult(g.id) * 100 - 100)}%</b></>}
+              {mNext !== null && <span className="gm-prog"> · {engine.masteryBought(g.id)}/{mNext}</span>}
+            </div>
+          );
+        })()}
         <div className="progress">
           <div
             className={`bar${continuous ? ' continuous' : ''}`}

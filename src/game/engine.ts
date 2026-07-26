@@ -12,6 +12,7 @@ import {
   ASCEND_MIN_REBIRTHS, EON_BASE, EON_INCOME_BONUS, EON_CRYSTAL_BONUS, eonsForAscension,
   seasonalEvent, type SeasonalEvent,
   ERA_RUSH_MULT, eraRushId, eraRushEndsAt,
+  MASTERY_BONUS, masteryLevel as masteryLevelFor, masteryNext,
   type GeneratorDef, type QuestDef,
 } from './data';
 import { audio } from '../services/audio';
@@ -200,6 +201,8 @@ export interface GameState {
   bossTarget: number;
   /** claimed Codex milestone ids (each grants a permanent global bonus) */
   codexClaimed: string[];
+  /** total lifetime units bought per venture (persists across rebirth) → Business Mastery */
+  mastery: Record<string, number>;
   // ─── stats history (A7) ───
   /** rolling samples of income/sec + total crystals for the stats graphs */
   incomeHistory: number[];
@@ -221,7 +224,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 16;
+const VERSION = 17;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -327,6 +330,16 @@ function migrate(save: any): any {
   if (typeof save.warpTickets !== 'number') save.warpTickets = 0;
   // v15→v16: Codex / Chronicle milestones.
   if (!Array.isArray(save.codexClaimed)) save.codexClaimed = [];
+  // v16→v17: Business Mastery. Seed from current owned counts so existing players don't start at 0.
+  if (!save.mastery || typeof save.mastery !== 'object') {
+    save.mastery = {};
+    if (save.generators && typeof save.generators === 'object') {
+      for (const id in save.generators) {
+        const c = save.generators[id]?.count;
+        if (typeof c === 'number' && c > 0) save.mastery[id] = c;
+      }
+    }
+  }
   save.version = VERSION;
   return save;
 }
@@ -443,6 +456,7 @@ function defaultState(): GameState {
     bossEarnedAmt: 0,
     bossTarget: 0,
     codexClaimed: [],
+    mastery: {},
     incomeHistory: [],
     crystalHistory: [],
     lastStatSampleAt: 0,
@@ -874,6 +888,7 @@ export class GameEngine {
     m *= 1 + this.skillLevel('combo_master') * 0.05; // Combo Master skill
     if (this.state.albumsClaimed.includes(era)) m *= 1 + ALBUM_BONUS; // completed card album
     if (era === this.eraRushIndex()) m *= ERA_RUSH_MULT; // rotating Era Rush boost
+    m *= this.masteryMult(genId); // Business Mastery (lifetime buys)
     return m;
   }
 
@@ -1164,9 +1179,16 @@ export class GameEngine {
     this.state.cash -= cost;
     this.state.generators[genId].count += count;
     this.state.dayBought += count;
+    this.state.mastery[genId] = (this.state.mastery[genId] ?? 0) + count; // lifetime buys → mastery
     if (this.state.sfxOn) audio.sfxBuy();
     this.emit();
   }
+
+  // ─── Business Mastery ───
+  masteryBought(genId: string): number { return this.state.mastery[genId] ?? 0; }
+  masteryLevel(genId: string): number { return masteryLevelFor(this.masteryBought(genId)); }
+  masteryNext(genId: string): number | null { return masteryNext(this.masteryBought(genId)); }
+  masteryMult(genId: string): number { return 1 + this.masteryLevel(genId) * MASTERY_BONUS; }
 
   /** QoL: buy MAX of every business in an era, cheapest first (most units for the cash) */
   buyMaxAll(era: number): void {

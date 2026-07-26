@@ -278,6 +278,9 @@ body {
 .gen-rev { font-size: 13px; color: var(--green); font-weight: 800; margin-top: 1px; text-shadow: 0 0 12px rgba(69,224,138,0.35); }
 .gen-milestone { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; font-weight: 600; }
 .gen-milestone b { color: #ffd77a; }
+.gen-mastery { font-size: 10px; color: var(--text-dim); margin-top: 1px; font-weight: 700; }
+.gen-mastery b { color: #ff9d5c; }
+.gen-mastery .gm-prog { opacity: 0.7; font-weight: 600; }
 
 .progress {
   position: relative;

@@ -569,6 +569,20 @@ export function eraRushEndsAt(now = Date.now()): number {
   return ERA_RUSH_EPOCH + (eraRushId(now) + 1) * ERA_RUSH_MS;
 }
 
+// ─── Business Mastery: each venture levels up from TOTAL lifetime units bought (persists across
+//     rebirths), granting a small permanent per-venture output bonus. A pure long-tail sink. ───
+export const MASTERY_THRESHOLDS = [50, 200, 800, 3000, 12000, 50000];
+export const MASTERY_BONUS = 0.08; // +8% venture output per mastery level (max 6 → +48%)
+export function masteryLevel(totalBought: number): number {
+  let lvl = 0;
+  for (const th of MASTERY_THRESHOLDS) if (totalBought >= th) lvl++;
+  return lvl;
+}
+export function masteryNext(totalBought: number): number | null {
+  for (const th of MASTERY_THRESHOLDS) if (totalBought < th) return th;
+  return null;
+}
+
 // ─── Ads / boosts ───
 export const AD_BOOST_BASE_HOURS = 3;   // ×2 boost duration (was 4h)
 export const TIMEWARP_HOURS = 1;        // instant-collect ad = 1h of production (was 2h)
