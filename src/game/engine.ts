@@ -13,6 +13,7 @@ import {
   seasonalEvent, type SeasonalEvent,
   ERA_RUSH_MULT, eraRushId, eraRushEndsAt,
   MASTERY_BONUS, masteryLevel as masteryLevelFor, masteryNext,
+  PARADOX_MAX, paradoxCostMult as paradoxCostFor, paradoxIncomeMult as paradoxIncomeFor,
   type GeneratorDef, type QuestDef,
 } from './data';
 import { audio } from '../services/audio';
@@ -203,6 +204,8 @@ export interface GameState {
   codexClaimed: string[];
   /** total lifetime units bought per venture (persists across rebirth) → Business Mastery */
   mastery: Record<string, number>;
+  /** Paradox / NG+ difficulty level (0 = off) */
+  paradox: number;
   // ─── stats history (A7) ───
   /** rolling samples of income/sec + total crystals for the stats graphs */
   incomeHistory: number[];
@@ -224,7 +227,7 @@ const SAVE_KEY = 'chrono_empire_save';
 const BACKUP_KEY = 'chrono_empire_save_bak';
 // Older keys read once and migrated forward, so existing players keep their progress.
 const LEGACY_KEYS = ['chrono_empire_save_v2', 'chrono_empire_save_v1'];
-const VERSION = 17;
+const VERSION = 18;
 const ALBUM_BONUS = 0.15; // +15% era output for completing that era's card album
 const STAT_SAMPLE_MS = 90_000; // sample income/crystals for the history graphs every 90s of play
 const STAT_MAX_SAMPLES = 48;   // rolling window (~72 min of active play)
@@ -340,6 +343,8 @@ function migrate(save: any): any {
       }
     }
   }
+  // v17→v18: Paradox / NG+ difficulty level.
+  if (typeof save.paradox !== 'number') save.paradox = 0;
   save.version = VERSION;
   return save;
 }
@@ -457,6 +462,7 @@ function defaultState(): GameState {
     bossTarget: 0,
     codexClaimed: [],
     mastery: {},
+    paradox: 0,
     incomeHistory: [],
     crystalHistory: [],
     lastStatSampleAt: 0,
@@ -858,6 +864,7 @@ export class GameEngine {
     m *= 1 + this.skillLevel('crit_income') * 0.04; // Critical Income skill
     m *= 1 + this.eonLevel('eon_power') * EON_UPGRADE_BY_ID['eon_power'].value; // Eon Upgrade
     m *= this.codexMult(); // permanent Codex milestone bonuses
+    m *= this.paradoxIncomeMult(); // Paradox / NG+ income scaling
     if (this.state.starterPack) m *= 2; // permanent IAP boost
     if (this.state.vip) m *= 2; // VIP subscription perk
     if (this.state.eons > 0) m *= 1 + this.state.eons * EON_INCOME_BONUS; // 2nd-prestige boost
@@ -1158,7 +1165,7 @@ export class GameEngine {
     const gs = this.state.generators[genId];
     const r = g.costRate;
     const disc = this.costDiscount();
-    const nextCost = g.baseCost * Math.pow(r, gs.count) * disc;
+    const nextCost = g.baseCost * Math.pow(r, gs.count) * disc * this.paradoxCostMult();
     if (amount === 'max') {
       const cash = this.state.cash;
       if (cash < nextCost) return { count: 1, cost: nextCost };
@@ -1181,6 +1188,17 @@ export class GameEngine {
     this.state.dayBought += count;
     this.state.mastery[genId] = (this.state.mastery[genId] ?? 0) + count; // lifetime buys → mastery
     if (this.state.sfxOn) audio.sfxBuy();
+    this.emit();
+  }
+
+  // ─── Paradox / NG+ ───
+  paradoxUnlocked(): boolean { return this.state.ascensions >= 1; }
+  paradoxCostMult(): number { return paradoxCostFor(this.state.paradox); }
+  paradoxIncomeMult(): number { return paradoxIncomeFor(this.state.paradox); }
+  setParadox(lvl: number): void {
+    if (!this.paradoxUnlocked()) return;
+    this.state.paradox = Math.max(0, Math.min(PARADOX_MAX, Math.round(lvl)));
+    this.save();
     this.emit();
   }
 

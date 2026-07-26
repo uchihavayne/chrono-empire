@@ -454,6 +454,32 @@ body {
 .ascend-bar span { display: block; height: 100%; border-radius: 6px;
   background: linear-gradient(90deg, #2fb0e8, #8fe0ff); transition: width 0.3s; }
 
+/* ─── Paradox / NG+ ─── */
+.paradox-card {
+  margin: 10px 0; padding: 12px 14px; border-radius: 16px;
+  border: 1px solid rgba(200,120,255,0.45);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(170,80,255,0.22), transparent 60%),
+    linear-gradient(150deg, rgba(40,16,60,0.6), rgba(70,20,90,0.35));
+  box-shadow: 0 4px 18px rgba(120,40,180,0.3);
+}
+.paradox-head { display: flex; align-items: center; gap: 11px; }
+.paradox-icon { font-size: 30px; filter: drop-shadow(0 2px 6px rgba(180,80,255,0.6)); animation: festivalPulse 3s ease-in-out infinite; }
+.paradox-title { font-weight: 800; font-size: 15px; color: #e0b0ff; }
+.paradox-sub { font-size: 11.5px; color: var(--text-dim); font-weight: 600; line-height: 1.35; margin-top: 2px; }
+.paradox-effect { display: flex; gap: 10px; justify-content: center; margin: 9px 0 8px; font-size: 13px; font-weight: 800; }
+.paradox-effect .px-cost { color: #ff8a8a; }
+.paradox-effect .px-income { color: #8fe08a; }
+.paradox-controls { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.paradox-controls .px-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: none; font-family: inherit;
+  font-size: 22px; font-weight: 800; color: #fff; cursor: pointer;
+  background: linear-gradient(180deg, #9a4dff, #6a24c8); box-shadow: 0 3px 0 #4a1a8a;
+}
+.paradox-controls .px-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #4a1a8a; }
+.paradox-controls .px-btn:disabled { opacity: 0.4; }
+.paradox-controls .px-level { font-size: 18px; font-weight: 800; color: #e0b0ff; min-width: 56px; text-align: center; }
+
 /* ─── tab bar ─── */
 .tabbar {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;

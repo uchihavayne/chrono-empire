@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ASCEND_MIN_REBIRTHS, ERA_IDS, INVESTORS, SKILLS, skillCost, type InvestorPerk } from '../game/data';
+import { ASCEND_MIN_REBIRTHS, ERA_IDS, INVESTORS, PARADOX_MAX, SKILLS, skillCost, type InvestorPerk } from '../game/data';
 import { EXP_UNLOCK_ERAS, RELICS, relicCost } from '../game/expedition';
 import { EON_UPGRADES } from '../game/eon';
 import { formatNumber } from '../game/format';
@@ -141,6 +141,28 @@ export function RebirthTab() {
               <span style={{ opacity: 0.5 }}>·</span> {t('ascensions', { n: s.ascensions })}
             </p>
           )}
+        </div>
+      )}
+
+      {/* Paradox / NG+ — an end-game difficulty knob unlocked after the first Ascension */}
+      {engine.paradoxUnlocked() && (
+        <div className="paradox-card">
+          <div className="paradox-head">
+            <span className="paradox-icon">🌀</span>
+            <div className="info">
+              <div className="paradox-title">{t('paradox_title')} · {t('level', { n: s.paradox })}</div>
+              <div className="paradox-sub">{t('paradox_desc')}</div>
+            </div>
+          </div>
+          <div className="paradox-effect">
+            <span className="px-cost">💸 {t('paradox_cost', { n: formatNumber(engine.paradoxCostMult(), s.notation) })}</span>
+            <span className="px-income">📈 {t('paradox_income', { n: formatNumber(engine.paradoxIncomeMult(), s.notation) })}</span>
+          </div>
+          <div className="paradox-controls">
+            <button className="px-btn" disabled={s.paradox <= 0} onClick={() => engine.setParadox(s.paradox - 1)}>−</button>
+            <span className="px-level">{s.paradox} / {PARADOX_MAX}</span>
+            <button className="px-btn" disabled={s.paradox >= PARADOX_MAX} onClick={() => engine.setParadox(s.paradox + 1)}>+</button>
+          </div>
         </div>
       )}
 

@@ -569,6 +569,14 @@ export function eraRushEndsAt(now = Date.now()): number {
   return ERA_RUSH_EPOCH + (eraRushId(now) + 1) * ERA_RUSH_MS;
 }
 
+// ─── Paradox / NG+: an end-game difficulty knob (unlocked after the first Ascension). Each level
+//     multiplies costs faster than income, so progress is genuinely harder — but reaching the same
+//     point takes far more lifetime cash, which means more prestige crystals. There is no cash-out
+//     multiplier, so it can't be gamed by cranking the level up right before a rebirth. ───
+export const PARADOX_MAX = 5;
+export const paradoxCostMult = (lvl: number) => Math.pow(4, lvl);   // costs ×4^level
+export const paradoxIncomeMult = (lvl: number) => Math.pow(3, lvl); // income ×3^level
+
 // ─── Business Mastery: each venture levels up from TOTAL lifetime units bought (persists across
 //     rebirths), granting a small permanent per-venture output bonus. A pure long-tail sink. ───
 export const MASTERY_THRESHOLDS = [50, 200, 800, 3000, 12000, 50000];
